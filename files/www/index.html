@@ -1,0 +1,2357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>SpeedTest by OpenSpeedTest™</title>
+  <meta name="description"
+    content="Test your network speed now. HTML5 Network Performance Estimation Tool. Self-Hosted SpeedTest by OpenSpeedTest™"/>
+  <link href="assets/css/app.css" rel="stylesheet" type="text/css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta property="og:image" content="assets/images/img.png" />
+  <link rel='canonical' href='https://openspeedtest.com'/>
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/images/icons/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/images/icons/favicon-16x16.png">
+  <link rel="manifest" href="assets/images/icons/site.webmanifest">
+  <link rel="mask-icon" href="assets/images/icons/safari-pinned-tab.svg" color="#5bbad5">
+  <link rel="shortcut icon" href="assets/images/icons/favicon.ico">
+  <meta name="msapplication-TileColor" content="#ffc40d">
+  <meta name="msapplication-config" content="assets/images/icons/browserconfig.xml">
+  <meta name="theme-color" content="#ffffff">
+  
+  <!-- Modern Display Guard Styles -->
+  <style data-version="2">
+    :root {
+      --primary-blue: #3b82f6;
+      --card-background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      --card-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      --card-border: 1px solid rgba(255, 255, 255, 0.2);
+      
+      /* Color Variables */
+      --dark-blue: #236da0;
+      --dark-blue-transparent: rgba(35,109,160,0.1);
+      --dark-blue-medium: rgba(35,109,160,0.3);
+      --dark-gray: #495057;
+      --light-gray: #6b7280;
+      --light-blue-gray: #f8fafc;
+      
+      /* Status Colors */
+      --green: #10b981;
+      --yellow: #eab308;
+      --red: #ef4444;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .speedtest-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      align-items: center;
+    }
+    
+    .speedtest-card {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      width: 100%;
+      max-width: 1400px;
+      position: relative;
+      overflow: hidden;
+      min-height: 700px;
+    }
+    
+    .speedtest-card::before {
+      display: none;
+    }
+    
+    .speedtest-content {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    
+    /* Modern Metrics Containers */
+    .metrics-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-bottom: 30px;
+      align-items: center;
+    }
+    
+    .metrics-row {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    .metric-card {
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      padding: 25px;
+      min-width: 200px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border: none;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    /* Stats Bar - Ping, Jitter, and Streaming Stats */
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      padding: 20px 35px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+      max-width: 900px;
+      margin-left: auto;
+      margin-right: auto;
+      gap: 40px;
+    }
+    
+    .ping-stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 120px;
+      height: 60px;
+      justify-content: center;
+    }
+    
+    .ping-icon {
+      font-size: 18px;
+      color: #1e3a8a !important;
+    }
+    
+    .ping-content {
+      text-align: left;
+    }
+    
+    .ping-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .ping-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+      line-height: 1;
+    }
+    
+    .ping-unit {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    
+    .ping-status {
+      font-size: 10px;
+      color: #28a745;
+      font-weight: 600;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    .jitter-stat {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 120px;
+      height: 60px;
+      justify-content: center;
+    }
+    
+    .jitter-icon {
+      font-size: 18px;
+      color: #1e3a8a !important;
+    }
+    
+    .jitter-content {
+      text-align: left;
+    }
+    
+    .jitter-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    
+    .jitter-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1f2937;
+      line-height: 1;
+    }
+    
+    .jitter-unit {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 2px;
+    }
+    
+    .jitter-status {
+      font-size: 10px;
+      color: #28a745;
+      font-weight: 600;
+      margin-top: 2px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    /* Streaming Stats Styles */
+    .streaming-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: var(--light-blue-gray);
+      border: 2px solid var(--dark-blue);
+      transition: all 0.3s ease;
+      opacity: 0.5;
+      width: 90px;
+      height: 70px;
+      justify-content: center;
+      flex-shrink: 0;
+      box-sizing: border-box;
+    }
+    
+    .streaming-item.supported {
+      background: #f0fdf4;
+      border-color: #10b981;
+      border-width: 2px;
+      opacity: 1;
+    }
+    
+    .streaming-item.moderate {
+      background: #fefce8;
+      border-color: #eab308;
+      border-width: 2px;
+      opacity: 0.8;
+    }
+    
+    .streaming-item.unsupported {
+      background: #fef2f2;
+      border-color: #ef4444;
+      border-width: 2px;
+      opacity: 0.3;
+    }
+    
+    .streaming-item.testing {
+      background: var(--dark-blue-transparent) !important;
+      border-color: var(--dark-blue) !important;
+      border-width: 2px !important;
+      opacity: 1 !important;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    
+    .streaming-item i {
+      font-size: 16px;
+      color: #6b7280;
+    }
+    
+    .speedtest-content .streaming-item.supported i {
+      color: var(--green) !important;
+    }
+    
+    .speedtest-content .streaming-item.moderate i {
+      color: var(--yellow) !important;
+    }
+    
+    .speedtest-content .streaming-item.unsupported i {
+      color: var(--red) !important;
+    }
+    
+    .speedtest-content .streaming-item.testing i {
+      color: var(--dark-blue) !important;
+    }
+    
+    .streaming-item span {
+      font-size: 10px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+    }
+    
+    .streaming-item.supported span {
+      color: #10b981;
+    }
+    
+    .streaming-item.moderate span {
+      color: #eab308;
+    }
+    
+    .streaming-item.unsupported span {
+      color: #ef4444;
+    }
+    
+    .streaming-item.testing span {
+      color: #1e3a8a !important;
+    }
+    
+    /* Add spacing between streaming items */
+    .streaming-item + .streaming-item {
+      margin-left: 15px;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+    
+    /* Download and Upload cards - matching stats bar styling */
+    .download-card,
+    .upload-card {
+      width: 350px;
+      padding: 20px 25px;
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    
+    .metric-info {
+      flex: 1;
+      min-width: 120px;
+      max-width: 150px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .metric-chart {
+      flex: 1.5;
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      overflow: hidden;
+      position: relative;
+      border-left: 4px solid #495057;
+      border-bottom: 4px solid #495057;
+      border-radius: 0 0 0 8px;
+      background: transparent;
+    }
+    
+    .metric-chart canvas {
+      max-width: 100% !important;
+      height: 120px !important;
+      width: 100% !important;
+    }
+    
+    /* Smaller, more compact styling for download/upload */
+    .download-card .metric-label,
+    .upload-card .metric-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .download-card .metric-value,
+    .upload-card .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #212529;
+      margin-bottom: 3px;
+      line-height: 1;
+    }
+    
+    .download-card .metric-unit,
+    .upload-card .metric-unit {
+      font-size: 12px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+    
+    .download-card .metric-status,
+    .upload-card .metric-status {
+      font-size: 11px;
+      color: #28a745;
+      font-weight: 600;
+      margin-top: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    
+    /* Download and Upload specific styling */
+    .download-card .metric-icon,
+    .upload-card .metric-icon {
+      font-size: 24px;
+      color: #1e3a8a !important;
+      flex-shrink: 0;
+    }
+    
+    .download-card .metric-content,
+    .upload-card .metric-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      flex: 1;
+    }
+    
+    .metric-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .metric-label {
+      font-size: 16px;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .metric-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #212529;
+      margin-bottom: 5px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .metric-unit {
+      font-size: 14px;
+      color: #6c757d;
+      font-weight: 500;
+    }
+    
+    .metric-status {
+      font-size: 12px;
+      color: #28a745;
+      font-weight: 600;
+      margin-top: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .metric-status.testing {
+      color: #ffc107;
+    }
+    
+    .metric-status.error {
+      color: #dc3545;
+    }
+    
+    /* Force light mode for SVG content */
+    .speedtest-content svg {
+      background-color: white !important;
+    }
+    
+    /* Ensure text is visible on light background */
+    .speedtest-content text,
+    .speedtest-content tspan {
+      fill: #333333 !important;
+      color: #333333 !important;
+    }
+    
+    /* Override any dark mode styles that might affect text visibility */
+    .speedtest-content * {
+      color: #333333 !important;
+    }
+    
+    /* Override icon colors to use the proper blue */
+    .speedtest-content .metric-icon,
+    .speedtest-content .ping-icon,
+    .speedtest-content .jitter-icon,
+    .speedtest-content .download-card .metric-icon,
+    .speedtest-content .upload-card .metric-icon,
+    .speedtest-content .ping-stat .ping-icon,
+    .speedtest-content .jitter-stat .jitter-icon,
+    .speedtest-content i.fas {
+      color: var(--dark-blue) !important;
+    }
+    
+    /* Modern Progress Bar Styles */
+    .modern-progress-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 40px 0 20px 0;
+      padding: 20px;
+      width: 100%;
+      max-width: 600px;
+      position: relative;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    
+    .modern-progress-bar {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      width: 400px;
+      margin-bottom: 15px;
+    }
+    
+    .progress-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      color: var(--dark-blue);
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    
+    .progress-track {
+      flex: 1;
+      height: 12px;
+      background: var(--dark-blue-transparent);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--dark-gray);
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: var(--dark-blue);
+      border-radius: 6px;
+      width: 0%;
+      transition: none;
+    }
+    
+    .progress-status {
+      font-size: 16px;
+      color: #495057;
+      text-align: center;
+      margin-top: 10px;
+      min-height: 24px;
+      font-weight: 500;
+    }
+    
+    .progress-speed {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--dark-blue);
+      text-align: center;
+      margin-top: 8px;
+      min-height: 32px;
+    }
+    
+    /* Thread Configuration Container Styles */
+    .thread-config-outer-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 30px 0;
+    }
+    
+    .thread-config-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 25px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      min-width: 800px;
+    }
+    
+    .thread-config-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--dark-gray);
+      margin-bottom: 15px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .thread-config-row {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+    
+    .thread-config-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .thread-label-side {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--light-gray);
+      min-width: 50px;
+      text-align: center;
+      transition: color 0.3s ease;
+    }
+    
+    .thread-label-side.active {
+      color: var(--dark-gray);
+      font-weight: 600;
+    }
+    
+    .thread-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #495057;
+      white-space: nowrap;
+      margin-bottom: 8px;
+    }
+    
+    .thread-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--dark-blue);
+      background: white;
+      color: var(--light-gray);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+    
+    .thread-btn:hover {
+      border-color: var(--dark-blue);
+      color: var(--dark-blue);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px var(--dark-blue-transparent);
+    }
+    
+    .thread-btn.active {
+      border-color: var(--dark-blue);
+      background: var(--dark-blue);
+      color: white !important;
+      box-shadow: 0 4px 12px var(--dark-blue-transparent);
+    }
+    
+    .thread-btn.active:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px var(--dark-blue-transparent);
+      color: white !important;
+    }
+    
+    .thread-btn.active i {
+      color: white !important;
+    }
+    
+    .thread-btn.disabled,
+    .thread-switch.disabled {
+      opacity: 0.5 !important;
+      cursor: not-allowed !important;
+      pointer-events: none !important;
+    }
+    
+    .thread-switch.disabled {
+      opacity: 0.5 !important;
+    }
+    
+    .thread-switch.disabled.active {
+      background: var(--dark-blue) !important;
+    }
+    
+    .thread-switch.disabled:hover {
+      opacity: 0.5 !important;
+    }
+    
+    .thread-switch.disabled::before {
+      opacity: 0.8 !important;
+    }
+    
+    /* Switch styling for thread type button */
+    .thread-switch {
+      width: 47px;
+      height: 28px;
+      border-radius: 14px;
+      border: none;
+      background: #ccc;
+      position: relative;
+      transition: background-color 0.3s ease;
+      cursor: pointer;
+      padding: 0;
+      display: block;
+    }
+    
+    .thread-switch::before {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      display: block;
+      z-index: 1;
+    }
+    
+    .thread-switch.active {
+      background: var(--dark-blue);
+    }
+    
+    .thread-switch.active::before {
+      transform: translateX(20px);
+    }
+    
+    .thread-switch:hover {
+      opacity: 0.8;
+    }
+    
+    /* Switch tooltip styling */
+    .thread-switch {
+      position: relative;
+    }
+    
+    .thread-switch[data-tooltip-current]:hover::after {
+      content: attr(data-tooltip-current);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      z-index: 1000;
+      pointer-events: none;
+      margin-bottom: 8px;
+    }
+    
+    /* Thread Button Tooltips */
+    .thread-btn {
+      position: relative;
+    }
+    
+    .thread-btn::before {
+      content: attr(data-tooltip-current);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1000;
+      pointer-events: none;
+      margin-bottom: 8px;
+    }
+    
+    .thread-btn::after {
+      content: '';
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 5px solid transparent;
+      border-top-color: rgba(0, 0, 0, 0.9);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1000;
+      pointer-events: none;
+      margin-bottom: 3px;
+    }
+    
+    .thread-btn:hover::before,
+    .thread-btn:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    /* Modern Error Indicator Styles */
+    .modern-error-container {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      padding: 15px 20px;
+      background: var(--card-background);
+      border-radius: 15px;
+      box-shadow: var(--card-shadow);
+      border: var(--card-border);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .modern-error-container:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .modern-error-container.show {
+      display: flex;
+    }
+    
+    .error-icon {
+      font-size: 24px;
+      color: #dc3545;
+      flex-shrink: 0;
+    }
+    
+    .error-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #dc3545;
+    }
+    
+    /* Modern Speedometer Gauge Styles */
+    .modern-gauge-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 30px 0;
+      padding: 30px;
+      background: var(--card-background);
+      border-radius: 20px;
+      box-shadow: var(--card-shadow);
+      border: var(--card-border);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .modern-gauge-container:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    
+    .custom-gauge-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 30px 0;
+    }
+    
+    .gauge-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 30px;
+      margin-bottom: 40px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 12px;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.8);
+      border: none;
+      position: relative;
+      min-width: 800px !important;
+      min-height: 580px !important;
+    }
+    
+    .speed-gauge {
+      position: relative;
+      width: 500px;
+      height: 400px;
+      margin: 0 auto;
+      overflow: hidden;
+      /* clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); */
+    }
+    
+    .speed-gauge analog-gauge {
+      --analog-gauge-bg: color-mix(in srgb, var(--dark-blue) 60%, black), color-mix(in srgb, var(--dark-blue) 85%, black), var(--dark-blue), color-mix(in srgb, var(--dark-blue) 85%, white), color-mix(in srgb, var(--dark-blue) 60%, white) var(--analog-gauge-value, 0%), var(--dark-blue-transparent) 0 var(--analog-gauge-range), #0000 0 var(--analog-gauge-range);
+                  --analog-gauge-needle-bg: linear-gradient(to right, var(--dark-gray) 0%, var(--dark-gray) 30%, rgba(73, 80, 87, 0.7) 50%, var(--dark-blue-medium) 70%, var(--dark-blue-transparent) 90%, transparent 100%);
+      --analog-gauge-needle-cp: polygon(35% 35%, 75% 0%, 78% 35%, 78% 65%, 75% 100%, 35% 65%);
+      --analog-gauge-segments: 12;
+      --analog-gauge-start-angle: 235deg;
+      --analog-gauge-range: 250deg;
+      --analog-gauge-bdw: 10cqi;
+      --analog-gauge-needle-h: 8cqi;
+      --analog-gauge-value-fs: 16cqi;
+      --analog-gauge-label-fs: 8cqi;
+      --analog-gauge-value-mark-fs: 4cqi;
+      --analog-gauge-value-mark-w: 6ch;
+    }
+    
+    /* OLD CODE - KEEP UNTIL CONFIRMED WORKING */
+    /* .gauge-center-info {
+      position: absolute;
+      bottom: 5%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      z-index: 15;
+    }
+    
+    .gauge-value {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--primary-blue);
+      line-height: 1;
+    }
+    
+    .gauge-unit {
+      font-size: 16px;
+      color: #666;
+      margin-top: 8px;
+    } */
+    /* NEW CODE - TESTING */
+    /* Gauge center info CSS removed as requested */
+    
+    /* Gauge markers */
+    .gauge-marker {
+      position: absolute;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+    
+
+    
+    /* Modern Start Button Styles */
+    .modern-start-button-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 30px 0;
+      padding: 20px;
+    }
+    
+    .modern-start-button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 32px;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-blue);
+      background: var(--card-background);
+      border: 2px solid var(--primary-blue);
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: var(--card-shadow);
+      min-width: 200px;
+      justify-content: center;
+    }
+    
+    .modern-start-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(86, 196, 251, 0.3);
+      background: #f8f9ff;
+      border-color: var(--primary-blue);
+    }
+    
+    .modern-start-button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 6px rgba(86, 196, 251, 0.2);
+    }
+    
+    .modern-start-button i {
+      font-size: 20px;
+    }
+    
+    .modern-start-button.running {
+      background: #f8f9ff;
+      border-color: var(--primary-blue);
+      color: var(--primary-blue);
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+    
+    .modern-start-button.running:hover {
+      background: #f8f9ff;
+      border-color: #667eea;
+      transform: none;
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+    
+    /* GO Button Styles */
+    .go-button {
+      background: white;
+      color: var(--dark-blue);
+      border: 3px solid var(--dark-blue);
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      font-size: 32px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.5s ease;
+      position: relative;
+      box-shadow: 0 10px 30px var(--dark-blue-transparent);
+      animation: buttonPulse 3s ease-out infinite;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    
+    .go-button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140px;
+      height: 140px;
+      border: 2px solid var(--dark-blue);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: ring 3s ease-out infinite;
+      animation-delay: 1.0s;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .go-button::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140px;
+      height: 140px;
+      border: 2px solid var(--dark-blue-transparent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: ring 3s ease-out infinite;
+      animation-delay: 1.5s;
+      opacity: 0;
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    
+    .go-button:hover {
+      transform: scale(1.1);
+      background: var(--light-blue-gray);
+      color: var(--dark-blue);
+    }
+    
+    .go-button:active {
+      transform: scale(0.95);
+    }
+    
+
+    
+    .go-button.retry {
+      animation: buttonPulse 3s ease-out infinite;
+    }
+    
+    .go-button.retry::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140px;
+      height: 140px;
+      border: 2px solid var(--dark-blue);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: ring 3s ease-out infinite;
+      animation-delay: 1.0s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    .go-button.retry::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 140px;
+      height: 140px;
+      border: 2px solid var(--dark-blue-transparent);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: ring 3s ease-out infinite;
+      animation-delay: 1.5s;
+      opacity: 0;
+      filter: blur(2px);
+      pointer-events: none;
+    }
+    
+    .go-text {
+      display: block;
+      text-align: center;
+      line-height: 1;
+    }
+    
+    .go-button.retry {
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .go-button.retry i {
+      font-size: 24px;
+      color: var(--primary-blue);
+    }
+    
+    .go-button.retry .go-text {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .go-button.running {
+      cursor: default;
+      pointer-events: none;
+    }
+    
+    .go-button.running:hover {
+      transform: none;
+      background: white;
+    }
+    
+
+    
+    /* GO Button Container */
+    .go-button-container {
+      position: absolute;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 20;
+      transition: opacity 0.5s ease;
+    }
+    
+    .go-button-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    /* Gauge and Progress Bar Container */
+    .gauge-progress-container {
+      position: relative;
+      transition: opacity 0.5s ease;
+    }
+    
+    .gauge-progress-container.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+    
+    /* Hide gauge numbers by default */
+    analog-gauge [part="value-mark"] {
+      opacity: 0 !important;
+    }
+    
+    /* Logo and Title Styles */
+    .logo {
+      max-width: 250px;
+      height: auto;
+      margin-bottom: 30px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    
+    .title {
+      color: var(--dark-blue) !important;
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    
+    .subtitle {
+      color: #666;
+      font-size: 16px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+    
+    /* General hidden class */
+    .hidden {
+      display: none !important;
+    }
+    
+    @keyframes ring {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+      }
+    }
+    
+    @keyframes buttonPulse {
+      0% {
+        transform: scale(1);
+      }
+      30% {
+        transform: scale(0.95);
+      }
+      50% {
+        transform: scale(1);
+      }
+      100% {
+        transform: scale(1);
+      }
+    }
+    
+    /* Responsive design */
+    @media (max-width: 768px) {
+      .speedtest-container {
+        padding: 10px;
+      }
+      
+      .speedtest-card {
+        padding: 10px;
+        border-radius: 15px;
+        min-height: 600px;
+      }
+      
+      .metrics-container {
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      
+      .metrics-row {
+        gap: 15px;
+      }
+      
+      .metric-card {
+        min-width: 150px;
+        padding: 20px;
+      }
+      
+      .ping-jitter-card {
+        min-width: 250px;
+        padding: 10px;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .ping-section,
+      .jitter-section {
+        gap: 8px;
+      }
+      
+      .metric-icon {
+        font-size: 20px;
+      }
+      
+      .download-card,
+      .upload-card {
+        width: 240px;
+        flex-direction: column;
+        padding: 12px;
+      }
+      
+      .metric-chart {
+        height: 100px;
+      }
+      
+      .download-card .metric-label,
+      .upload-card .metric-label {
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      
+      .download-card .metric-value,
+      .upload-card .metric-value {
+        font-size: 24px;
+        margin-bottom: 2px;
+      }
+      
+      .download-card .metric-unit,
+      .upload-card .metric-unit {
+        font-size: 11px;
+      }
+      
+      .download-card .metric-status,
+      .upload-card .metric-status {
+        font-size: 10px;
+        margin-top: 3px;
+      }
+      
+      .metric-value {
+        font-size: 28px;
+      }
+      
+      .modern-start-button {
+        padding: 14px 28px;
+        font-size: 16px;
+        min-width: 180px;
+      }
+      
+      .modern-start-button i {
+        font-size: 18px;
+      }
+      
+      .modern-progress-container {
+        max-width: 320px;
+        padding: 15px;
+      }
+      
+      .modern-progress-bar {
+        gap: 12px;
+        width: 270px;
+      }
+      
+      .progress-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 16px;
+      }
+      
+      .progress-track {
+        height: 10px;
+      }
+      
+      .progress-status {
+        font-size: 14px;
+      }
+    }
+    
+    /* Preserve original loading spinner positioning */
+    .spinner {
+      position: relative;
+      z-index: 2;
+    }
+    
+    /* Legacy SVG gauge CSS removed - replaced with custom analog gauge */
+    
+    /* Chart canvas styling within metric cards */
+    .metric-chart canvas {
+      max-width: 100%;
+      height: 150px !important;
+      width: 100% !important;
+    }
+    
+    /* Credits styling */
+    .Credits {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .Credits a {
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+    }
+    
+    .Credits a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <script type="text/javascript">
+/*
+     Official Website : https://OpenSpeedTest.COM | Email: support@openspeedtest.com
+     Developed by : Vishnu | https://Vishnu.Pro | Email : me@vishnu.pro 
+            
+     HTML5 Network Performance Estimation Tool -> [JS,XHR,SVG,HTML,CSS]
+     Started in 2011 and Moved to OpenSpeedTest.COM, Dedicated Project/Domain Name in 2013.
+     SpeedTest Script -> 2013 -> Beta | 2015 -> V1 | 2019 ->V2 | 2020 V2.1 | 2021 V2.12 | 2022 V2.5 & 2.5.3
+     Self-Hosted OpenSpeedTest-Server (iFrame/Nginx) -> 2014. (Managed SelfHosted SpeedTesT Widget)
+     OpenSpeedTest-Server (On-premises) (Fully SelfHosted Apps)
+     [OpenSpeedTest-Server Docker Image] -> V1 2019 | V2 2020 | V2.1 2021 | V2.2 & 2.2.2 2022
+     [Node.js/Electron JS  OpenSpeedTest-Server Desktop Apps] -> 2020 V1 | 2021 V2 & V2.1 | 2.1.1 to 2.1.8 2022
+     [Ionic Android and iOS OpenSpeedTest-Server Mobile Apps] V1.2 to 1.5 2022 
+
+     Download Now -> https://go.openspeedtest.com/Server
+
+     Like this Project? Please Donate NOW & Keep us Alive -> https://go.openspeedtest.com/Donate
+
+     Speed Test by OpenSpeedTest™️ is Free and Open-Source Software (FOSS) with MIT License.
+     Read full license terms @ http://go.openspeedtest.com/License
+
+     If you have any Questions, ideas or Comments Please Send it via -> https://go.openspeedtest.com/SendMessage
+*/
+
+     // Add or Remove Server --> Automatically choose the one with the least latency
+    var openSpeedTestServerList = [
+        {"ServerName":"Home", "Download":"downloading", "Upload":"upload", "ServerIcon":"DefaultIcon"}
+      ];
+          
+    // Send pings 'pingSamples' times to each Server URL.
+        var pingSamples = 10;
+
+    // 50% samples(Least)/length 1=100% 0.1 = 10%
+        var jitterFinalSample = 0.5; 
+
+    // Set a pingSample dynamically by passing "Ping" or "p" as a URL Parameter.
+        var setPingSamples = true;
+
+    // If Server has not responded within 5 Seconds for any requests we send ('pingSamples' times)
+    // We will show Network Error. You can change the limit here.
+    // In milliseconds, if you need to set 6 seconds. Change the value to 6000.
+        var pingTimeOut = 5000; 
+
+    // Set a PingTimeout dynamically by passing "Out" or "O" as a URL Parameter    
+        var setPingTimeout = true;
+
+    // GET or HEAD  // Other Methods may work. but why?
+        var pingMethod = "GET";
+
+    //Choose Download or Upload from the Server list. If you Prefer Download, change pingMethod to HEAD.
+        var pingFile = "Upload";
+
+    // The amount of garbage data sent to the server in Mb, 30 = 30Mb
+        var ulDataSize = 30;
+
+    // Don't touch it
+        var ulDelay = 300;
+        var dlDelay = 300;
+
+    // Overhead Compensation factor, This is a browser-dependent test, Many Unknowns. Currently, 4%. That is within the margin of error.
+        var upAdjust = 1.04;
+        var dlAdjust = 1.04;
+
+   // You can pass "Clean" or "C" as a URL Parameter and reset the Overhead Compensation factor to Zero or set any value between 0 and 4. 1 = 1% to 4 = 4% 
+   // "clean" will not accept values above 4, so Compensation is limited to a maximum of 4%.
+        var enableClean = true;
+
+    // Minimum 12 Seconds is Expected. 
+        var dlDuration = 12;
+        var ulDuration = 12;
+
+    // 6 is the common limit found on most browsers.
+    // Choose  Number for parallel HTTP connections to Server | Default is 6 
+        var dlThreads = 6;
+        var ulThreads = 6;
+
+    // Allow user to Change default limit of 6 parallel HTTP connections to Server  | Accept values above 1 and max 32
+    // pass "XHR" or "X" as a URL Parameter
+        var setHTTPReq = true;
+
+    // Save Data to a Database
+        var saveData = false;
+        var saveDataURL = "//yourDatabase.Server.com:4500/save?data=";
+
+    // Allow user to change the default 12 seconds test duration
+    // Pass "Stress" or "S" as a URL Parameter.
+        var stressTest = true;
+
+    // Allow user to select and run one test at a time, download, upload, or ping
+    // Pass "Test" or "T" as a URL Parameter.
+        var selectTest = true;
+
+    // Allow user to select a different server to run a test  
+    // Pass "Host" or "H" ad a  URL Parameter.
+    // Accept only valid HTTP URLs like "http://192.168.1.10:3000" or "https://yourHost.com"
+        var selectServer = true;
+
+    // Start a test Automatically without pressing the start button
+    // You can Delay the test for 'n' seconds by passing any number as a value for Run Keyword. e.g.: "Run=10" or "R=10" to delay the test by 10 Seconds.
+    // Pass "Run" or "R" as a URL Parameter to start a test instantly.
+        var enableRun = true;
+
+    // "Run" will not work if you are already using 'selectTest' "Test" or "T" Keyword.
+
+ 
+function ostOnload() {
+  
+      
+      
+    }
+  
+  var openChannel = "dev";
+
+  </script>
+
+<!--
+Speed Test by OpenSpeedTest™️ is Free and Open-Source Software with MIT License.
+
+You can play with the CSS, HTML & SVG files to change the colors or add your support desk info to this page.
+Also, you can add your company logo anywhere on this page. It's FOSS. You can do whatever you see fit.
+
+If you like to make any other modification to this application or need a custom deployment for your organization, 
+please get in touch with support@openspeedtest.com.
+-->
+
+  <!-- Modern Display Guard Container -->
+  <div class="speedtest-container">
+    <div class="speedtest-card">
+      <div class="speedtest-content">
+        <!-- Logo and Title -->
+        <img src="assets/images/logo-1.png" alt="Tidewater Telecom" class="logo">
+        <h1 class="title">Tidewater Telecom Speed Test</h1>
+        <p class="subtitle">Test your connection to our O.P.E.N. fiber network</p>
+        
+        <!-- Modern Metrics Containers -->
+        <div class="metrics-container">
+          <!-- First Row: Download and Upload -->
+          <div class="metrics-row">
+            <div class="metric-card download-card">
+              <div class="metric-info">
+                <div class="metric-icon">
+                  <i class="fas fa-download"></i>
+                </div>
+                <div class="metric-content">
+                  <div class="metric-label">Download</div>
+                  <div class="metric-value" id="download-value">--</div>
+                  <div class="metric-unit">Mbps</div>
+                  <div class="metric-status" id="download-status">Ready</div>
+                </div>
+              </div>
+              <div class="metric-chart">
+                <canvas id="download-chart" width="300" height="150"></canvas>
+              </div>
+            </div>
+            
+            <div class="metric-card upload-card">
+              <div class="metric-info">
+                <div class="metric-icon">
+                  <i class="fas fa-upload"></i>
+                </div>
+                <div class="metric-content">
+                  <div class="metric-label">Upload</div>
+                  <div class="metric-value" id="upload-value">--</div>
+                  <div class="metric-unit">Mbps</div>
+                  <div class="metric-status" id="upload-status">Ready</div>
+                </div>
+              </div>
+              <div class="metric-chart">
+                <canvas id="upload-chart" width="300" height="150"></canvas>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Second Row: Ping, Jitter, and Streaming Stats -->
+                      <div class="metrics-row">
+            <div class="stats-bar">
+              <div class="ping-stat">
+                <div class="ping-icon">
+                  <i class="fas fa-wifi"></i>
+                </div>
+                <div class="ping-content">
+                  <div class="ping-label">PING</div>
+                  <div class="ping-value" id="ping-value">--</div>
+                  <div class="ping-unit">ms</div>
+                  <div class="ping-status" id="ping-status">Ready</div>
+                </div>
+              </div>
+              
+              <div class="jitter-stat">
+                <div class="jitter-icon">
+                  <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="jitter-content">
+                  <div class="jitter-label">JITTER</div>
+                  <div class="jitter-value" id="jitter-value">--</div>
+                  <div class="jitter-unit">ms</div>
+                  <div class="jitter-status" id="jitter-status">Ready</div>
+                </div>
+              </div>
+              
+              <div class="streaming-item" id="streamingHD">
+                <i class="fas fa-tv"></i>
+                <span>HD</span>
+              </div>
+              <div class="streaming-item" id="streaming4K">
+                <i class="fas fa-film"></i>
+                <span>4K</span>
+              </div>
+              <div class="streaming-item" id="videoChat">
+                <i class="fas fa-video"></i>
+                <span>Chat</span>
+              </div>
+              <div class="streaming-item" id="gaming">
+                <i class="fas fa-gamepad"></i>
+                <span>Game</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Modern Network Error Indicator -->
+        <div class="modern-error-container" id="modern-error-container">
+          <div class="error-icon">
+            <i class="fas fa-wifi-slash"></i>
+          </div>
+          <div class="error-text">Network Error</div>
+        </div>
+        
+          
+          <!-- Custom Gauge Container -->
+          <div class="custom-gauge-container">
+            <div class="gauge-container">
+              <!-- GO Button Container -->
+              <div class="go-button-container" id="goButtonContainer">
+                <button class="go-button" id="goButton">
+                  <span class="go-text">GO</span>
+                </button>
+              </div>
+              
+              <!-- Gauge and Progress Bar Container -->
+              <div class="gauge-progress-container" id="gaugeProgressContainer">
+                <div class="speed-gauge" id="speedGaugeContainer">
+                  <analog-gauge id="speedGauge" value="0" min="0" max="1000" values="0,0.25,0.5,0.75,1,5.5,10,55,100,250,500,750,1000+"></analog-gauge>
+                </div>
+                
+                <!-- Modern Progress Bar -->
+                <div class="modern-progress-container">
+                  <div class="modern-progress-bar">
+                    <div class="progress-icon left-icon">
+                      <i class="fas fa-user"></i>
+                    </div>
+                    <div class="progress-track">
+                      <div class="progress-fill" id="modern-progress-fill"></div>
+                    </div>
+                    <div class="progress-icon right-icon">
+                      <i class="fas fa-server"></i>
+                    </div>
+                  </div>
+                  <div class="progress-speed" id="modern-progress-speed">--</div>
+                  <div class="progress-status" id="modern-progress-status">Ready to start</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Thread Configuration Container -->
+          <div class="thread-config-outer-container">
+            <div class="thread-config-container">
+              <div class="thread-config-title">Thread Configuration</div>
+              <div class="thread-config-row">
+                <div class="thread-config-item">
+                  <div class="thread-label-side" id="single-label">Single</div>
+                  <button class="thread-btn" id="thread-mode-btn" data-tooltip-multi="Multi: Multiple parallel connections" data-tooltip-single="Single: One connection at a time">
+                    <i class="fas fa-circle"></i>
+                  </button>
+                  <div class="thread-label-side" id="multi-label">Multi</div>
+                </div>
+                <div class="thread-config-item" id="thread-type-container">
+                  <div class="thread-label-side" id="default-label">Default</div>
+                  <button class="thread-switch" id="thread-type-btn" data-tooltip-dynamic="Dynamic: Uses 75% of logical processors for threads" data-tooltip-default="Default: Uses 6 threads"></button>
+                  <div class="thread-label-side" id="dynamic-label">Dynamic</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Modern Start Button - Replaced by GO Button -->
+        <!-- <div class="modern-start-button-container">
+          <button id="modern-start-button" class="modern-start-button">
+            <i class="fas fa-play"></i>
+            <span>Start Speed Test</span>
+          </button>
+        </div> -->
+        
+        <!-- Original Content - Preserved Exactly As Is -->
+        <div id="loading_app" class="spinner">
+          <div class="bounce1"></div>
+          <div class="bounce2"></div>
+          <div class="bounce3"></div>
+        </div>
+        <!-- Legacy SVG gauge removed - replaced with custom analog gauge -->
+      </div>
+    </div>
+  </div>
+  
+
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+      <script>
+        // Cache-busting: Add timestamp to prevent browser caching
+        var script = document.createElement('script');
+        script.src = 'assets/js/app-2.5.4.js?v=' + Date.now();
+        document.head.appendChild(script);
+      </script>
+      
+      <script>
+        // Dynamic tooltip management for thread buttons
+        function updateThreadButtonTooltips() {
+          // Thread Mode button
+          const modeBtn = document.getElementById('thread-mode-btn');
+          if (modeBtn) {
+            const isMulti = modeBtn.classList.contains('active');
+            const tooltipText = isMulti ? 
+              modeBtn.getAttribute('data-tooltip-multi') : 
+              modeBtn.getAttribute('data-tooltip-single');
+            modeBtn.setAttribute('data-tooltip-current', tooltipText);
+            
+            // Update side label colors
+            const singleLabel = document.getElementById('single-label');
+            const multiLabel = document.getElementById('multi-label');
+            if (singleLabel && multiLabel) {
+              singleLabel.classList.toggle('active', !isMulti);
+              multiLabel.classList.toggle('active', isMulti);
+            }
+          }
+          
+          // Thread Type switch
+          const typeBtn = document.getElementById('thread-type-btn');
+          if (typeBtn) {
+            const isDynamic = typeBtn.classList.contains('active');
+            const tooltipText = isDynamic ? 
+              typeBtn.getAttribute('data-tooltip-dynamic') : 
+              typeBtn.getAttribute('data-tooltip-default');
+            typeBtn.setAttribute('data-tooltip-current', tooltipText);
+            
+            // Update side label colors
+            const defaultLabel = document.getElementById('default-label');
+            const dynamicLabel = document.getElementById('dynamic-label');
+            if (defaultLabel && dynamicLabel) {
+              defaultLabel.classList.toggle('active', !isDynamic);
+              dynamicLabel.classList.toggle('active', isDynamic);
+            }
+          }
+        }
+        
+        // GO Button functionality
+        function initializeGoButton() {
+          const goButton = document.getElementById('goButton');
+          const goButtonContainer = document.getElementById('goButtonContainer');
+          
+          if (goButton && goButtonContainer) {
+            goButton.addEventListener('click', function() {
+              // Reset streaming stats to testing state if this is a retry
+              if (goButton.classList.contains('retry')) {
+                if (typeof setStreamingStatsToTesting === 'function') {
+                  setStreamingStatsToTesting();
+                }
+              }
+              
+              // Set button to running state
+              goButton.classList.add('running');
+              goButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+              
+              // Start test with fade animation
+              startTestWithFade();
+            });
+          }
+        }
+        
+        // Function to fade gauge numbers in/out
+        function fadeGaugeNumbers(fromOpacity, toOpacity, duration) {
+          const gauge = document.getElementById('speedGauge');
+          if (!gauge) return;
+          
+          // Find all value mark elements (the numbers) within the gauge
+          const valueMarks = gauge.shadowRoot ? 
+            gauge.shadowRoot.querySelectorAll('[part="value-mark"]') : 
+            gauge.querySelectorAll('[part="value-mark"]');
+          
+          if (valueMarks.length === 0) return;
+          
+          const startTime = Date.now();
+          
+          function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function for smooth animation
+            const easeProgress = 1 - Math.pow(1 - progress, 3);
+            
+            const currentOpacity = fromOpacity + (toOpacity - fromOpacity) * easeProgress;
+            
+            valueMarks.forEach(mark => {
+              mark.style.opacity = currentOpacity;
+              mark.style.transition = 'opacity 0.1s ease';
+            });
+            
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            }
+          }
+          
+          animate();
+        }
+        
+        // Function to fade gauge numbers progressively (0 to 1000)
+        function fadeGaugeNumbersProgressive(fromValue, toValue, duration, callback) {
+          const gauge = document.getElementById('speedGauge');
+          if (!gauge) {
+            if (callback) callback();
+            return;
+          }
+          
+          // Find all value mark elements (the numbers) within the gauge
+          const valueMarks = gauge.shadowRoot ? 
+            gauge.shadowRoot.querySelectorAll('[part="value-mark"]') : 
+            gauge.querySelectorAll('[part="value-mark"]');
+          
+          if (valueMarks.length === 0) {
+            if (callback) callback();
+            return;
+          }
+          
+          // Sort value marks by their numeric value
+          const sortedMarks = Array.from(valueMarks).sort((a, b) => {
+            const aValue = parseInt(a.textContent) || 0;
+            const bValue = parseInt(b.textContent) || 0;
+            return aValue - bValue;
+          });
+          
+          const startTime = Date.now();
+          
+          function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Linear progress for even timing
+            const linearProgress = progress;
+            
+            // Calculate how many numbers should be visible based on linear progress
+            const totalNumbers = sortedMarks.length;
+            const visibleCount = Math.floor(linearProgress * totalNumbers);
+            
+            // Show/hide numbers based on their position
+            sortedMarks.forEach((mark, index) => {
+              if (index < visibleCount) {
+                mark.style.setProperty('--value-mark-opacity', '1');
+              } else {
+                mark.style.setProperty('--value-mark-opacity', '0');
+              }
+              mark.style.transition = 'opacity 0.1s ease';
+            });
+            
+            // Don't set gauge value - we only want to fade the numbers, not move the needle
+            
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            } else {
+              // Animation complete, call callback if provided
+              if (callback) {
+                callback();
+              }
+            }
+          }
+          
+          animate();
+        }
+        
+        // Function to fade out gauge numbers progressively (1000 to 0)
+        function fadeGaugeNumbersOutProgressive(duration, callback) {
+          const gauge = document.getElementById('speedGauge');
+          if (!gauge) {
+            if (callback) callback();
+            return;
+          }
+          
+          // Find all value mark elements (the numbers) within the gauge
+          const valueMarks = gauge.shadowRoot ? 
+            gauge.shadowRoot.querySelectorAll('[part="value-mark"]') : 
+            gauge.querySelectorAll('[part="value-mark"]');
+          
+          if (valueMarks.length === 0) {
+            if (callback) callback();
+            return;
+          }
+          
+          // Sort value marks by their numeric value (highest to lowest for fade-out)
+          const sortedMarks = Array.from(valueMarks).sort((a, b) => {
+            // Handle "1000+" specially
+            const aText = a.textContent.trim();
+            const bText = b.textContent.trim();
+            
+            let aValue, bValue;
+            
+            if (aText === '1000+') {
+              aValue = 1000;
+            } else {
+              aValue = parseFloat(aText) || 0;
+            }
+            
+            if (bText === '1000+') {
+              bValue = 1000;
+            } else {
+              bValue = parseFloat(bText) || 0;
+            }
+            
+            return bValue - aValue; // Reverse sort for fade-out
+          });
+          
+          const startTime = Date.now();
+          
+          function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Linear progress for even timing
+            const linearProgress = progress;
+            
+            // Calculate how many numbers should be hidden based on linear progress
+            const totalNumbers = sortedMarks.length;
+            const hiddenCount = Math.floor(linearProgress * totalNumbers);
+            
+            // Hide numbers progressively from highest to lowest
+            sortedMarks.forEach((mark, index) => {
+              if (index < hiddenCount) {
+                mark.style.setProperty('--value-mark-opacity', '0');
+              } else {
+                mark.style.setProperty('--value-mark-opacity', '1');
+              }
+              mark.style.transition = 'opacity 0.1s ease';
+            });
+            
+            if (progress < 1) {
+              requestAnimationFrame(animate);
+            } else {
+              // Animation complete, call callback if provided
+              if (callback) {
+                callback();
+              }
+            }
+          }
+          
+          animate();
+        }
+        
+        // Function to show retry button after test completion
+        function showRetryButton() {
+          const goButton = document.getElementById('goButton');
+          const goButtonContainer = document.getElementById('goButtonContainer');
+          
+          if (goButton && goButtonContainer) {
+            // Fade out gauge numbers progressively from 1000 to 0
+            fadeGaugeNumbersOutProgressive(1500, function() {
+              // Show retry button after fade-out is complete
+              goButton.classList.remove('running');
+              goButton.classList.add('retry');
+              goButton.innerHTML = '<i class="fas fa-redo"></i><span class="go-text">Rerun Test</span>';
+            });
+          }
+          
+          // Enable thread configuration after test completion
+          if (typeof enableThreadConfig === 'function') {
+            enableThreadConfig();
+          }
+        }
+        
+        // Function to start test with fade animation
+        function startTestWithFade() {
+          // Start the test immediately
+          if (typeof runTasks === 'function') {
+            // Use setTimeout with 0ms to ensure it runs in the next tick
+            setTimeout(function() {
+              runTasks();
+            }, 0);
+          }
+          
+          // Start fade in gauge numbers after 250ms delay
+          setTimeout(function() {
+            fadeGaugeNumbersProgressive(0, 1000, 1500, function() {
+              // This callback runs when fade animation is complete
+            });
+          }, 250);
+        }
+        
+        // Initialize tooltips when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+          updateThreadButtonTooltips();
+          initializeGoButton();
+          
+          // Hide gauge numbers initially
+          setTimeout(() => {
+            // Try multiple times to ensure gauge is loaded
+            let attempts = 0;
+            const hideNumbers = () => {
+              const gauge = document.getElementById('speedGauge');
+              if (gauge && gauge.shadowRoot) {
+                const valueMarks = gauge.shadowRoot.querySelectorAll('[part="value-mark"]');
+                if (valueMarks.length > 0) {
+                  valueMarks.forEach(mark => {
+                    mark.style.setProperty('--value-mark-opacity', '0');
+                  });
+                } else if (attempts < 10) {
+                  attempts++;
+                  setTimeout(hideNumbers, 100);
+                }
+              } else if (attempts < 10) {
+                attempts++;
+                setTimeout(hideNumbers, 100);
+              }
+            };
+            hideNumbers();
+          }, 500);
+          
+          // Update tooltips when buttons are clicked (this will be handled by the main JS)
+          const modeBtn = document.getElementById('thread-mode-btn');
+          const typeBtn = document.getElementById('thread-type-btn');
+          
+          if (modeBtn) {
+            modeBtn.addEventListener('click', function() {
+              setTimeout(updateThreadButtonTooltips, 10); // Small delay to ensure class change
+            });
+          }
+          
+          if (typeBtn) {
+            typeBtn.addEventListener('click', function() {
+              setTimeout(updateThreadButtonTooltips, 10); // Small delay to ensure class change
+            });
+          }
+        });
+        
+        // Make showRetryButton available globally
+        window.showRetryButton = showRetryButton;
+      </script>
+    
+    <!-- Analog Gauge Web Component -->
+    <script>
+      const styles = new CSSStyleSheet();
+      styles.replaceSync(`
+        :host {
+          --analog-gauge-segments: 1;
+          --analog-gauge-segments-w: 1deg;
+          --analog-gauge-start-angle: 235deg;
+          --analog-gauge-range: 250deg;
+          --analog-gauge-bdw: 10cqi;
+          --analog-gauge-bg: #1e3a8a, #1e3a8a, #1e3a8a, #1e3a8a, #1e3a8a var(--analog-gauge-value, 0%), rgba(30, 58, 138, 0.1) 0 var(--analog-gauge-range), rgba(30, 58, 138, 0.1) 0 var(--analog-gauge-range);
+          --analog-gauge-mask-circle: radial-gradient(circle at 50% 50%, #0000 calc(50cqi - var(--analog-gauge-bdw, 10cqi) - 8px), #000 0);
+          --analog-gauge-mask-segment: repeating-conic-gradient(
+              from var(--analog-gauge-start-angle, 235deg) at 50% 50%,
+              #000 0 var(--analog-gauge-segments-w, 1deg),
+              #0000 0 calc((var(--analog-gauge-range, 250deg) / var(--analog-gauge-segments, 5))));
+          --analog-gauge-segments-w: 1.5deg;
+          --analog-gauge-needle-bg: #333;
+          --analog-gauge-needle-h: 10cqi;
+          --analog-gauge-value-mark-w: 5.5ch;
+
+          --_w: calc(100cqi/3*2);
+          --_vw: calc(100cqi - (2 * var(--analog-gauge-bdw, 10cqi)));
+          --_m: calc(100cqi/6);
+
+          aspect-ratio: 1;
+          container-type: inline-size;
+          font-family: var(--analog-clock-ff, ui-sans-serif, system-ui, sans-serif);
+          display: grid;
+          grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+          inline-size: 100%;
+        }
+
+        /* === GAUGE === */
+        :host::part(gauge) {
+          background: conic-gradient(from var(--analog-gauge-start-angle, 235deg), var(--analog-gauge-bg));
+          border-radius: 50%;
+          box-sizing: border-box;
+          grid-area: 1 / 1 / 4 / 4;
+          mask: var(--analog-gauge-mask-circle), var(--analog-gauge-mask-segment, none);
+          mask-composite: var(--analog-gauge-mask-composite, subtract);
+        }
+        
+        /* === OUTER BORDER === */
+        :host::part(outer-border) {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: calc(100% - 8px);
+          height: calc(100% - 8px);
+          border: 4px solid #495057;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 10;
+        }
+        
+        /* === INNER BORDER === */
+        :host::part(inner-border) {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: calc(100% - 2 * var(--analog-gauge-bdw, 10cqi) - 16px);
+          height: calc(100% - 2 * var(--analog-gauge-bdw, 10cqi) - 16px);
+          border: 4px solid #495057;
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* === LABELS === */
+        :host::part(label) {
+          font-size: var(--analog-gauge-label-fs, 7.5cqi);
+          font-weight: var(--analog-gauge-label-fw, 200);
+          grid-area: 3 / 2 / 4 / 3;
+          isolation: isolate;
+          line-height: 1.2;
+          place-self: end center;
+          text-align: center;
+          text-box: ex alphabetic;
+        }
+        :host::part(label-min),
+        :host::part(label-max) {
+          font-size: var(--analog-gauge-label-fs, 5cqi);
+          font-weight: var(--analog-gauge-label-fw, 400);
+          place-self: center;
+        }
+        :host::part(label-min) { grid-area: 3 / 1 / 4 / 2;}
+        :host::part(label-max) { grid-area: 3 / 3 / 4 / 4; }
+        :host::part(value) {
+          font-size: var(--analog-gauge-value-fs, 15cqi);
+          font-weight: var(--analog-gauge-value-fw, 200);
+          grid-area: 3 / 2 / 4 / 3;
+          isolation: isolate;
+          place-self: start center;
+          text-box: cap alphabetic;
+        }
+
+        /* === NEEDLE === */
+        :host::part(needle) {
+          align-self: center;
+          background: var(--analog-gauge-needle-bg);
+          clip-path: var(--analog-gauge-needle-cp, polygon(7.5% 50%,78% 0%,83% 35%,83% 65%,78% 100%));
+          grid-area: 2 / 1 / 3 / 3;
+          height: var(--analog-gauge-needle-h);
+          isolation: isolate;
+          mask: none;
+          rotate: var(--_d, 0deg);
+          transform-origin: calc(100% - var(--_m)) 50%;
+          width: var(--_w);
+          transition: rotate 0.1s ease-out;
+        }
+
+        /* === VALUE MARKS === */
+        :host::part(value-marks) {
+          all: unset;
+          aspect-ratio: 1;
+          background: var(--analog-gauge-values-bg, #0000);
+          border-radius: 50%;
+          box-sizing: border-box;
+          grid-area: 1 / 1 / 4 / 4;
+          list-style: none;
+          place-self: center;
+          position: relative;
+          width: var(--_vw);
+        }
+        :host::part(value-mark) {
+          --_r: calc((var(--_vw) - var(--analog-gauge-value-mark-w)) / 2);
+          --_x: calc(var(--_r) + (var(--_r) * cos(var(--_d))));
+          --_y: calc(var(--_r) + (var(--_r) * sin(var(--_d))));
+          aspect-ratio: var(--analog-gauge-value-mark-asr, 1);
+          color: var(--analog-gauge-value-mark-c, #495057);
+          display: grid;
+          font-size: var(--analog-gauge-value-mark-fs, 3cqi);
+          font-weight: var(--analog-gauge-value-mark-fw, 400);
+          left: var(--_x);
+          place-content: center;
+          position: absolute;
+          top: var(--_y);
+          width: var(--analog-gauge-value-mark-w);
+          opacity: var(--value-mark-opacity, 0);
+        }
+      `);
+
+      class AnalogGauge extends HTMLElement {
+        static get observedAttributes() {
+          return ['value'];
+        }
+        
+        #root; #units; #value; 
+        constructor() {
+          super();
+          this.#root = this.attachShadow({ mode: 'open' });
+          this.#root.adoptedStyleSheets = [styles];
+          const computedStyle = getComputedStyle(this);
+
+          this.#units = {
+            defaultMark: 90,
+            defaultNeedle: 270,
+            max: parseInt(this.getAttribute('max') || 100),
+            min: parseInt(this.getAttribute('min') || 0),
+            range: parseFloat(computedStyle.getPropertyValue("--analog-gauge-range")) || 250,
+            suffix: this.getAttribute('suffix') || '',
+            start: parseFloat(computedStyle.getPropertyValue("--analog-gauge-start-angle")) || 235,
+            value: parseFloat(this.getAttribute('value') || 0)
+          }
+
+          this.#units.minDegree = this.#units.start - this.#units.defaultNeedle;
+          this.#units.totalRange = this.#units.range;
+
+          this.#root.innerHTML = `
+            <div part="gauge"></div>
+            <div part="outer-border"></div>
+            <div part="inner-border"></div>
+            ${this.#generateValueMarks()}
+            <div part="needle"></div>
+            <div part="value"></div>
+            <div part="label">${this.getAttribute('label')||''}</div>
+            <div part="label-min">${this.getAttribute('min-label')||''}</div>
+            <div part="label-max">${this.getAttribute('max-label')||''}</div>`;
+
+          this.#value = this.#root.querySelector('[part="value"]');
+        }
+
+        attributeChangedCallback(name, oldValue, newValue) {
+          if (name === 'value' && oldValue !== newValue) {
+            this.#units.value = parseFloat(newValue || 0);
+            this.#update();
+          }
+        }
+
+        #generateValueMarks() {
+          const values = this.getAttribute('values');
+          if (!values) return '';
+          
+          let valueArray = [];
+          let count = 0;
+          
+          if (/^\s*\d+\s*$/.test(values)) {
+            count = parseInt(values.trim());
+            if (isNaN(count) || count <= 0) return '';  
+            valueArray = Array.from({ length: count }, (_, i) => 
+              Math.round(this.#units.min + (i * (this.#units.max - this.#units.min) / (count - 1 || 1)))
+            );
+          } else {
+            valueArray = values.split(',').map(v => v.trim());
+            count = valueArray.length;
+            if (count <= 0) return '';
+          }
+          
+          const degreeStep = this.#units.range / (count - 1 || 1);
+          
+          return `
+          <ul part="value-marks">
+            ${valueArray.map((value, i) => {
+              const degree = this.#units.start - this.#units.defaultMark + (i * degreeStep);
+              return `<li style="--_d:${degree}deg" part="value-mark">${value}</li>`;
+            }).join('')}
+          </ul>`;
+        }
+
+        #update() {
+          const normalizedValue = Math.max(this.#units.min, Math.min(this.#units.max, this.#units.value));
+          
+          // Map speed to gauge position based on non-linear markings
+          const valuePercentage = this.#mapSpeedToGaugePosition(normalizedValue);
+          
+          const degree = this.#units.minDegree + (valuePercentage * this.#units.totalRange);
+          this.style.setProperty('--analog-gauge-value', `${valuePercentage * this.#units.range}deg`);
+          this.style.setProperty('--_d', `${degree}deg`);
+          // OLD CODE - KEEP UNTIL CONFIRMED WORKING
+          // this.#value.textContent = this.#units.value + this.#units.suffix;
+          // NEW CODE - TESTING
+          // Hide the value display as requested
+          this.#value.textContent = '';
+        }
+
+        #mapSpeedToGaugePosition(speed) {
+          // OLD CODE - KEEP UNTIL CONFIRMED WORKING
+          // Linear mapping from 0 to 1000
+          // return Math.min(1, speed / 1000);
+          
+          // NEW CODE - TESTING
+          // Non-linear mapping to match original gauge scaling
+          const markings = [0, 0.5, 1, 10, 100, 500, 1000];
+          
+          // Find the appropriate position based on speed
+          for (let i = 0; i < markings.length - 1; i++) {
+            if (speed <= markings[i + 1]) {
+              // Linear interpolation between markings
+              const lowerMark = markings[i];
+              const upperMark = markings[i + 1];
+              const lowerPos = i / (markings.length - 1);
+              const upperPos = (i + 1) / (markings.length - 1);
+              
+              const ratio = (speed - lowerMark) / (upperMark - lowerMark);
+              return lowerPos + (ratio * (upperPos - lowerPos));
+            }
+          }
+          
+          // If speed is above 1000, scale proportionally
+          if (speed > 1000) {
+            return 1 + (speed - 1000) / 1000; // Extend beyond the last marking
+          }
+          
+          return 1; // Maximum position (1000)
+        }
+      }
+
+      customElements.define('analog-gauge', AnalogGauge);
+      
+      // Console function to test gauge scaling
+      window.testGaugeScaling = function(speedMbps) {
+        const analogGauge = document.getElementById('speedGauge');
+        if (analogGauge) {
+          analogGauge.setAttribute('value', speedMbps);
+          console.log(`Gauge set to ${speedMbps} Mbps`);
+          
+          // Also show the calculated position percentage
+          const markings = [0, 0.5, 1, 10, 100, 500, 1000];
+          let position = 0;
+          
+          for (let i = 0; i < markings.length - 1; i++) {
+            if (speedMbps <= markings[i + 1]) {
+              const lowerMark = markings[i];
+              const upperMark = markings[i + 1];
+              const lowerPos = i / (markings.length - 1);
+              const upperPos = (i + 1) / (markings.length - 1);
+              
+              const ratio = (speedMbps - lowerMark) / (upperMark - lowerMark);
+              position = lowerPos + (ratio * (upperPos - lowerPos));
+              break;
+            }
+          }
+          
+          if (speedMbps > 1000) {
+            position = 1 + (speedMbps - 1000) / 1000;
+          }
+          
+          console.log(`Position: ${(position * 100).toFixed(1)}% of gauge arc`);
+          console.log(`Between markings: ${markings.find((m, i) => speedMbps <= m) || 'above 1000'}`);
+        } else {
+          console.error('Analog gauge not found');
+        }
+      };
+      
+      // Quick test functions for common values
+      window.testGauge0 = () => testGaugeScaling(0);
+      window.testGauge05 = () => testGaugeScaling(0.5);
+      window.testGauge1 = () => testGaugeScaling(1);
+      window.testGauge10 = () => testGaugeScaling(10);
+      window.testGauge100 = () => testGaugeScaling(100);
+      window.testGauge500 = () => testGaugeScaling(500);
+      window.testGauge1000 = () => testGaugeScaling(1000);
+    </script>
+  </body>
+</html>

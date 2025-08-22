@@ -1,0 +1,995 @@
+// Modern Speed Test Interface for Tidewater Telecom
+// Based on OpenSpeedTest logic but adapted for modern HTML/CSS interface
+
+class ModernSpeedTest {
+  constructor() {
+    this.isRunning = false;
+    this.results = {
+      download: 0,
+      upload: 0,
+      ping: 0,
+      jitter: 0
+    };
+    
+    // Configuration
+    this.config = {
+      pingSamples: 10,
+      dlDuration: 12,
+      ulDuration: 12,
+      dlThreads: 4, // Conservative default - will be updated to optimal threads
+      ulThreads: 4, // Conservative default - will be updated to optimal threads
+      upAdjust: 1.0,
+      dlAdjust: 1.0,
+      ulDataSize: 30,
+      // Ramp-up settings
+      dlRampUpTime: 3000, // 3 seconds to ramp up
+      ulRampUpTime: 3000, // 3 seconds to ramp up
+      // Testing mode
+      singleThreaded: false, // Set to true for single-threaded testing
+      // Memory management
+      maxChunkSize: 1024 * 1024, // 1MB max chunk size
+      cleanupInterval: 1000, // Cleanup every 1 second
+      // Smart thread detection - more conservative
+      availableCores: 0, // Will be set below
+      optimalThreads: 0 // Will be set below
+    };
+    
+    // Initialize thread detection after config is created
+    this.config.availableCores = this.detectAvailableCores();
+    this.config.optimalThreads = this.calculateOptimalThreads();
+    
+    // Set optimal thread count
+    this.config.dlThreads = this.config.optimalThreads;
+    this.config.ulThreads = this.config.optimalThreads;
+    
+    // Memory management
+    this.activeStreams = new Set();
+    this.activeIntervals = new Set();
+    this.activeTimeouts = new Set();
+    this.activeReaders = new Set();
+    this.activeResponses = new Set();
+    
+    // Periodic cleanup to prevent memory leaks
+    this.cleanupInterval = setInterval(() => {
+      this.periodicCleanup();
+    }, 30000); // Cleanup every 30 seconds
+    
+    this.initializeUI();
+  }
+
+  // Method to switch between single and multi-threaded testing
+  setSingleThreaded(enabled) {
+    this.config.singleThreaded = enabled;
+    if (enabled) {
+      this.config.dlThreads = 1;
+      this.config.ulThreads = 1;
+      console.log('✅ Switched to single-threaded testing (1 download, 1 upload thread)');
+      this.statusText.textContent = 'Single-threaded mode enabled';
+    } else {
+      // Use optimal thread count based on available cores
+      this.config.dlThreads = this.config.optimalThreads;
+      this.config.ulThreads = this.config.optimalThreads;
+      console.log(`✅ Switched to optimal multi-threaded testing (${this.config.optimalThreads} download, ${this.config.optimalThreads} upload threads)`);
+      this.statusText.textContent = `Optimal mode enabled (${this.config.optimalThreads} threads)`;
+    }
+    
+    // Clear status after 2 seconds
+    setTimeout(() => {
+      if (!this.isRunning) {
+        this.statusText.textContent = 'Click the button above to start your speed test';
+      }
+    }, 2000);
+  }
+
+  // Detect available CPU cores - more conservative approach
+  detectAvailableCores() {
+    // Use navigator.hardwareConcurrency if available (most modern browsers)
+    if (navigator.hardwareConcurrency) {
+      // Be more conservative - cap at 6 cores max
+      return Math.min(navigator.hardwareConcurrency, 6);
+    }
+    
+    // Fallback: detect based on user agent and screen size
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                     window.innerWidth <= 768;
+    
+    // More conservative estimates
+    if (isMobile) {
+      // Conservative for mobile devices
+      return 2;
+    } else {
+      // Conservative for desktops
+      return 4;
+    }
+  }
+
+  // Calculate optimal number of threads for speed testing - more conservative
+  calculateOptimalThreads() {
+    const cores = this.config.availableCores;
+    
+    // More conservative approach for consistent results across devices
+    // Use fewer threads to avoid network congestion and inconsistent results
+    let optimalThreads;
+    if (cores <= 2) {
+      optimalThreads = 1; // Single-threaded for low-end devices
+    } else if (cores <= 4) {
+      optimalThreads = 2; // 2 threads for mid-range devices
+    } else if (cores <= 6) {
+      optimalThreads = 3; // 3 threads for high-end devices
+    } else {
+      optimalThreads = 4; // Cap at 4 threads for very high-end devices
+    }
+    
+    console.log(`🖥️ Detected ${cores} CPU cores`);
+    console.log(`⚡ Using ${optimalThreads} threads for speed testing (conservative)`);
+    
+    return optimalThreads;
+  }
+
+  // Detect mobile devices (kept for UI purposes)
+  detectMobile() {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+           window.innerWidth <= 768;
+  }
+
+  initializeUI() {
+    // Get DOM elements
+    this.goButton = document.getElementById('goButton');
+    this.speedGaugeContainer = document.getElementById('speedGaugeContainer');
+    this.speedGauge = document.getElementById('speedGauge');
+    this.progressBar = document.getElementById('progressBar');
+    this.progressFill = document.getElementById('progressFill');
+    this.statusText = document.getElementById('statusText');
+
+
+
+
+    this.ispLabel = document.getElementById('ispLabel');
+    this.ispLabelButton = document.getElementById('ispLabelButton');
+    this.clientIP = document.getElementById('clientIP');
+    this.clientIPButton = document.getElementById('clientIPButton');
+    
+    // Live metrics
+    this.liveDownloadSpeed = document.getElementById('liveDownloadSpeed');
+    this.liveUploadSpeed = document.getElementById('liveUploadSpeed');
+    this.livePingValue = document.getElementById('livePingValue');
+    this.liveJitterValue = document.getElementById('liveJitterValue');
+    this.downloadMetric = document.querySelector('.download-metric');
+    this.uploadMetric = document.querySelector('.upload-metric');
+
+    // Add event listeners
+    this.goButton.addEventListener('click', () => this.startTest());
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !this.isRunning) {
+        this.startTest();
+      }
+    });
+
+    // Thread toggle
+    this.singleThreadedToggle = document.getElementById('singleThreadedToggle');
+    this.singleThreadedToggle.addEventListener('change', (e) => {
+      this.setSingleThreaded(e.target.checked);
+    });
+    
+    // Load client ISP and IP immediately
+    this.getClientInfo();
+    
+    // Load server information for title
+    this.getServerInfo();
+    
+    // Log thread detection
+    console.log(`🖥️ Device: ${this.detectMobile() ? 'Mobile' : 'Desktop'}`);
+    console.log(`⚡ Optimal threads: ${this.config.optimalThreads} (based on ${this.config.availableCores} cores)`);
+    console.log(`📦 Chunk size: ${this.config.maxChunkSize / 1024}KB`);
+    
+    // Handle page visibility changes to prevent memory leaks
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        console.log('📄 Page hidden - cleaning up resources');
+        this.cleanup();
+      }
+    });
+    
+    // Handle page unload to ensure cleanup
+    window.addEventListener('beforeunload', () => {
+      console.log('📄 Page unloading - final cleanup');
+      this.cleanup();
+      if (this.cleanupInterval) {
+        clearInterval(this.cleanupInterval);
+      }
+    });
+  }
+
+  startTest() {
+    if (this.isRunning) return;
+    
+    this.isRunning = true;
+    this.goButton.disabled = true;
+    this.singleThreadedToggle.disabled = true; // Disable toggle during test
+    
+    // Pause periodic cleanup during test
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    
+    // Hide the IP/Server info that shows with GO button
+    const goButtonInfo = document.getElementById('goButtonInfo');
+    goButtonInfo.style.display = 'none';
+    
+    // Fade out GO button and show gauge
+    this.goButton.classList.add('fade-out');
+    
+    setTimeout(() => {
+      this.goButton.style.display = 'none';
+      this.speedGaugeContainer.style.display = 'block';
+      this.speedGaugeContainer.style.opacity = '0';
+      
+      // Fade in the gauge
+      setTimeout(() => {
+        this.speedGaugeContainer.style.transition = 'opacity 0.5s ease';
+        this.speedGaugeContainer.style.opacity = '1';
+      }, 50);
+    }, 500);
+    
+    // Reset UI
+    this.resetUI();
+    
+    // Start test sequence
+    this.runTestSequence();
+  }
+
+  resetUI() {
+    // Reset gauge to 0
+    this.speedGauge.setAttribute('value', '0');
+    
+    // this.progressBar.style.display = 'block'; // Keep progress bar hidden
+    this.progressFill.style.width = '0%';
+
+    // Reset live metrics
+    this.liveDownloadSpeed.textContent = '—';
+    this.liveUploadSpeed.textContent = '—';
+    this.livePingValue.textContent = '—';
+    this.liveJitterValue.textContent = '—';
+    this.downloadMetric.classList.remove('active');
+    this.uploadMetric.classList.remove('active');
+    
+    // Reset streaming stats to testing state
+    this.resetStreamingStats();
+  }
+
+  async runTestSequence() {
+    try {
+      // Step 1: Ping Test
+      await this.pingTest();
+      
+      // Step 2: Download Test
+      try {
+        await this.downloadTest();
+      } catch (error) {
+        console.error('Download test failed:', error);
+        this.results.download = 0;
+        this.liveDownloadSpeed.textContent = 'Failed';
+        this.updateStatus('Download test failed - continuing with upload...', 50);
+      }
+      
+      // Step 3: Upload Test
+      try {
+        await this.uploadTest();
+      } catch (error) {
+        console.error('Upload test failed:', error);
+        this.results.upload = 0;
+        this.liveUploadSpeed.textContent = 'Failed';
+        this.updateStatus('Upload test failed', 100);
+      }
+      
+      // Complete
+      this.completeTest();
+      
+    } catch (error) {
+      console.error('Test sequence failed:', error);
+      this.handleError(error.message);
+    }
+  }
+
+  async pingTest() {
+    this.updateStatus('Testing ping...', 0);
+    
+    const pings = [];
+    const startTime = Date.now();
+    
+    for (let i = 0; i < this.config.pingSamples; i++) {
+      const pingStart = performance.now();
+      try {
+        const response = await fetch('/upload?n=' + i, {
+          method: 'GET',
+          cache: 'no-cache'
+        });
+        const pingEnd = performance.now();
+        const pingTime = pingEnd - pingStart;
+        pings.push(pingTime);
+        
+        // Update live ping display
+        this.livePingValue.textContent = Math.round(pingTime);
+        
+        // Update progress for ping test (simulate speed based on progress)
+        const progress = ((i + 1) / this.config.pingSamples) * 100;
+        const simulatedSpeed = (progress / 100) * 100; // Scale to 0-100 Mbps for ping
+        this.updateProgress(simulatedSpeed);
+        
+        await this.delay(100);
+      } catch (error) {
+        console.warn('Ping failed:', error);
+      }
+    }
+    
+    // Calculate ping and jitter
+    pings.sort((a, b) => a - b);
+    const validPings = pings.slice(0, Math.ceil(pings.length * 0.5));
+    
+    this.results.ping = Math.round(validPings.reduce((a, b) => a + b, 0) / validPings.length);
+    this.results.jitter = Math.round(Math.max(...pings) - Math.min(...pings));
+    
+    // Update final ping and jitter values
+    this.livePingValue.textContent = this.results.ping;
+    this.liveJitterValue.textContent = this.results.jitter;
+    this.updateStatus(`Ping: ${this.results.ping}ms, Jitter: ${this.results.jitter}ms`, 100);
+  }
+
+  async downloadTest() {
+    this.updateStatus('Testing download speed...', 0);
+    
+    // Activate download metric
+    this.downloadMetric.classList.add('active');
+    this.uploadMetric.classList.remove('active');
+    
+    const startTime = Date.now();
+    let totalBytes = 0;
+    const testDuration = this.config.dlDuration * 1000; // Convert to milliseconds
+    let maxSpeed = 0;
+    
+    // Start progress tracking based on speed achieved
+    const progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      
+              // Calculate real-time speed
+        if (elapsed > 0) {
+          const currentSpeed = (totalBytes * 8 / 1000000 / (elapsed / 1000)) * this.config.dlAdjust;
+          let speedMbps = Math.round(currentSpeed);
+          
+          // Apply ramp-up effect for the first few seconds
+          if (elapsed < this.config.dlRampUpTime) {
+            const rampUpProgress = elapsed / this.config.dlRampUpTime;
+            speedMbps = Math.round(speedMbps * rampUpProgress);
+          }
+          
+          // Update max speed if current is higher
+          if (speedMbps > maxSpeed) {
+            maxSpeed = speedMbps;
+          }
+          
+          // Update progress and speed based on actual speed achieved
+          this.updateProgress(speedMbps);
+          this.updateSpeed(speedMbps);
+          this.liveDownloadSpeed.textContent = speedMbps;
+        }
+    }, 100);
+    
+    // Track interval for cleanup
+    this.activeIntervals.add(progressInterval);
+    
+    const downloadPromises = [];
+    
+    for (let i = 0; i < this.config.dlThreads; i++) {
+      downloadPromises.push(this.downloadThread(i, testDuration, (bytes) => {
+        totalBytes += bytes;
+      }));
+    }
+    
+    const results = await Promise.allSettled(downloadPromises);
+    
+    // Check if any downloads failed
+    const failedDownloads = results.filter(result => result.status === 'rejected');
+    if (failedDownloads.length > 0) {
+      console.error('Some download threads failed:', failedDownloads);
+      if (failedDownloads.length === results.length) {
+        throw new Error('All download threads failed');
+      }
+    }
+    
+    totalBytes = results
+      .filter(result => result.status === 'fulfilled')
+      .reduce((sum, result) => sum + result.value, 0);
+    
+    clearInterval(progressInterval);
+    
+    const endTime = Date.now();
+    const duration = (endTime - startTime) / 1000; // Convert to seconds
+    
+    // Calculate final download speed in Mbps
+    const downloadMbps = (totalBytes * 8 / 1000000 / duration) * this.config.dlAdjust;
+    this.results.download = Math.round(downloadMbps);
+    
+    this.updateStatus(`Download: ${this.results.download} Mbps`, 100);
+    this.updateSpeed(this.results.download);
+    this.liveDownloadSpeed.textContent = this.results.download;
+    
+    // Update HD and 4K based on download, set Chat and Game to testing
+    this.updateDownloadDependentStats();
+    this.setUploadDependentStatsToTesting();
+  }
+
+  async downloadThread(threadId, duration, onBytesReceived) {
+    let totalBytes = 0;
+    const startTime = Date.now();
+    let reader = null;
+    let response = null;
+    
+    try {
+      while (Date.now() - startTime < duration) {
+        try {
+          response = await fetch(`/downloading?_cb=${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, {
+            method: 'GET',
+            cache: 'no-cache'
+          });
+          
+          // Track response for cleanup
+          this.activeResponses.add(response);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Download failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
+          }
+          
+          reader = response.body.getReader();
+          
+          // Track reader for cleanup
+          this.activeReaders.add(reader);
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            totalBytes += value.length;
+            if (onBytesReceived) {
+              onBytesReceived(value.length);
+            }
+            
+            // Check if we should stop
+            if (Date.now() - startTime >= duration) break;
+          }
+          
+          // Clean up reader and response
+          if (reader) {
+            reader.releaseLock();
+            this.activeReaders.delete(reader);
+            reader = null;
+          }
+          if (response) {
+            this.activeResponses.delete(response);
+            response = null;
+          }
+          
+        } catch (error) {
+          console.warn(`Download thread ${threadId} failed:`, error);
+          throw error; // Re-throw to be caught by the main test
+        }
+      }
+    } finally {
+      // Ensure cleanup happens even if there's an error
+      if (reader) {
+        reader.releaseLock();
+        this.activeReaders.delete(reader);
+      }
+      if (response) {
+        this.activeResponses.delete(response);
+      }
+    }
+    
+    return totalBytes;
+  }
+
+  async uploadTest() {
+    this.updateStatus('Testing upload speed...', 0);
+    
+    // Activate upload metric
+    this.uploadMetric.classList.add('active');
+    this.downloadMetric.classList.remove('active');
+    
+    const startTime = Date.now();
+    let totalBytes = 0;
+    const testDuration = this.config.ulDuration * 1000;
+    let maxSpeed = 0;
+    
+    // Start progress tracking based on speed achieved
+    const progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      
+              // Calculate real-time speed
+        if (elapsed > 0) {
+          const currentSpeed = (totalBytes * 8 / 1000000 / (elapsed / 1000)) * this.config.upAdjust;
+          let speedMbps = Math.round(currentSpeed);
+          
+          // Apply ramp-up effect for the first few seconds
+          if (elapsed < this.config.ulRampUpTime) {
+            const rampUpProgress = elapsed / this.config.ulRampUpTime;
+            speedMbps = Math.round(speedMbps * rampUpProgress);
+          }
+          
+          // Update max speed if current is higher
+          if (speedMbps > maxSpeed) {
+            maxSpeed = speedMbps;
+          }
+          
+          // Update progress and speed based on actual speed achieved
+          this.updateProgress(speedMbps);
+          this.updateSpeed(speedMbps);
+          this.liveUploadSpeed.textContent = speedMbps;
+        }
+    }, 100);
+    
+    const uploadPromises = [];
+    
+    for (let i = 0; i < this.config.ulThreads; i++) {
+      uploadPromises.push(this.uploadThread(i, testDuration, (bytes) => {
+        totalBytes += bytes;
+      }));
+    }
+    
+    const results = await Promise.allSettled(uploadPromises);
+    
+    // Check if any uploads failed
+    const failedUploads = results.filter(result => result.status === 'rejected');
+    if (failedUploads.length > 0) {
+      console.error('Some upload threads failed:', failedUploads);
+      if (failedUploads.length === results.length) {
+        throw new Error('All upload threads failed');
+      }
+    }
+    
+    totalBytes = results
+      .filter(result => result.status === 'fulfilled')
+      .reduce((sum, result) => sum + result.value, 0);
+    
+    clearInterval(progressInterval);
+    
+    const endTime = Date.now();
+    const duration = (endTime - startTime) / 1000;
+    
+    // Calculate final upload speed in Mbps
+    const uploadMbps = (totalBytes * 8 / 1000000 / duration) * this.config.upAdjust;
+    this.results.upload = Math.round(uploadMbps);
+    
+    this.updateStatus(`Upload: ${this.results.upload} Mbps`, 100);
+    this.updateSpeed(this.results.upload);
+    this.liveUploadSpeed.textContent = this.results.upload;
+    
+    // Update streaming stats that depend on upload and ping
+    this.updateStreamingStats();
+  }
+
+  async uploadThread(threadId, duration, onBytesSent) {
+    let totalBytes = 0;
+    const startTime = Date.now();
+    let response = null;
+    
+    // Generate random data for upload (consistent chunk size)
+    const chunkSize = Math.min(1024 * 1024, this.config.maxChunkSize); // 1MB chunks for all devices
+    const randomData = this.generateRandomData(chunkSize);
+    
+    try {
+      while (Date.now() - startTime < duration) {
+        try {
+          response = await fetch(`/upload?_cb=${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, {
+            method: 'POST',
+            body: randomData,
+            headers: {
+              'Content-Type': 'application/octet-stream'
+            }
+          });
+          
+          // Track response for cleanup
+          this.activeResponses.add(response);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
+          }
+          
+          totalBytes += randomData.length;
+          if (onBytesSent) {
+            onBytesSent(randomData.length);
+          }
+          
+          // Clean up response
+          this.activeResponses.delete(response);
+          response = null;
+          
+          // Minimal delay for maximum performance
+          await this.delay(1);
+        } catch (error) {
+          console.warn(`Upload thread ${threadId} failed:`, error);
+          throw error; // Re-throw to be caught by the main test
+        }
+      }
+    } finally {
+      // Ensure cleanup happens even if there's an error
+      if (response) {
+        this.activeResponses.delete(response);
+      }
+    }
+    
+    return totalBytes;
+  }
+
+  generateRandomData(size) {
+    // Use consistent chunk size for all devices
+    const maxSize = Math.min(size, this.config.maxChunkSize);
+    
+    const array = new Uint8Array(maxSize);
+    
+    // Use a more memory-efficient random generation
+    const buffer = new ArrayBuffer(maxSize);
+    const view = new Uint8Array(buffer);
+    
+    // Fill with random data in chunks to avoid blocking
+    const chunkStep = 1024; // Consistent chunk step for all devices
+    for (let i = 0; i < maxSize; i += chunkStep) {
+      const chunkSize = Math.min(chunkStep, maxSize - i);
+      for (let j = 0; j < chunkSize; j++) {
+        view[i + j] = Math.floor(Math.random() * 256);
+      }
+    }
+    
+    return view;
+  }
+
+  updateStatus(message, percentage) {
+    this.statusText.textContent = message;
+    this.updateProgress(percentage);
+  }
+
+  updateProgress(speed) {
+    // Calculate percentage for progress bar (0-1000 Mbps = 0-100%)
+    const maxSpeed = 1000;
+    const percentage = Math.min((speed / maxSpeed) * 100, 100);
+    this.progressFill.style.width = percentage + '%';
+  }
+
+  updateSpeed(speed) {
+    // Update the gauge value directly
+    this.speedGauge.setAttribute('value', Math.round(speed));
+  }
+
+  async completeTest() {
+    // Update main display
+    this.updateSpeed(this.results.download);
+    this.statusText.textContent = 'Speed test completed successfully!';
+    
+    // Show results
+    // this.progressBar.style.display = 'none'; // Progress bar stays hidden
+    
+    // Update streaming stats
+    this.updateStreamingStats();
+    
+    // Clean up memory
+    this.cleanup();
+    
+    // Reset button and show IP/Server info again
+    this.isRunning = false;
+    this.goButton.disabled = false;
+    this.singleThreadedToggle.disabled = false; // Re-enable toggle after test
+    this.goButton.classList.remove('fade-out');
+    this.goButton.style.display = 'block';
+    this.speedGaugeContainer.style.display = 'none';
+    
+    // Show the IP/Server info that goes with the GO button
+    const goButtonInfo = document.getElementById('goButtonInfo');
+    goButtonInfo.style.display = 'flex';
+    
+    // Resume periodic cleanup after test
+    this.cleanupInterval = setInterval(() => {
+      this.periodicCleanup();
+    }, 30000);
+    
+    console.log('Test completed:', this.results);
+    this.logMemoryUsage();
+  }
+
+  async getClientInfo() {
+    // Show loading state
+    this.ispLabel.textContent = 'Loading...';
+    this.ispLabelButton.textContent = 'Loading...';
+    this.clientIP.textContent = 'Loading...';
+    this.clientIPButton.textContent = 'Loading...';
+    
+    try {
+      console.log('🌐 Step 1: Getting client IP from api.ipify.org...');
+      
+      // Step 1: Get client's public IP directly from api.ipify.org
+      const ipResponse = await fetch('https://api.ipify.org/?format=json&_cb=' + Date.now());
+      if (!ipResponse.ok) {
+        throw new Error(`IP API failed: ${ipResponse.status}`);
+      }
+      
+      const ipData = await ipResponse.json();
+      const clientIP = ipData.ip;
+      console.log('📡 Client IP received:', clientIP);
+      
+      // Set IP address immediately
+      this.clientIP.textContent = clientIP;
+      this.clientIPButton.textContent = clientIP;
+      
+      console.log('🌐 Step 2: Getting geolocation data from our backend...');
+      
+      // Step 2: Use our backend geolocation endpoint with the IP we just got
+      const geoResponse = await fetch(`/geo/${clientIP}?_cb=${Date.now()}`);
+      if (!geoResponse.ok) {
+        throw new Error(`Geolocation API failed: ${geoResponse.status}`);
+      }
+      
+      const geoData = await geoResponse.json();
+      console.log('📡 Geolocation data received:', geoData);
+      
+      // Use org field first (shows "Spectrum"), fallback to isp
+      const ispName = geoData.org || geoData.isp || 'Unknown ISP';
+      
+      // Set ISP name as label
+      this.ispLabel.textContent = ispName;
+      this.ispLabelButton.textContent = ispName;
+      
+      console.log('✅ Client IP/ISP info set:', { ip: clientIP, isp: ispName });
+      
+    } catch (error) {
+      console.error('❌ Error in IP/ISP detection:', error);
+      
+      // Show error state
+      this.ispLabel.textContent = 'Error';
+      this.ispLabelButton.textContent = 'Error';
+      this.clientIP.textContent = 'Error';
+      this.clientIPButton.textContent = 'Error';
+    }
+  }
+
+  async getServerInfo() {
+    // Set a simple, static title for the browser tab
+    document.title = 'Tidewater Speed Test';
+    console.log('✅ Browser title set to: Tidewater Speed Test');
+  }
+
+
+
+  resetStreamingStats() {
+    const streamingItems = ['streamingHD', 'streaming4K', 'videoChat', 'gaming'];
+    streamingItems.forEach(id => {
+      const element = document.getElementById(id);
+      element.classList.remove('supported', 'moderate', 'unsupported', 'testing');
+      element.classList.add('testing');
+    });
+  }
+
+  updateDownloadDependentStats() {
+    const downloadSpeed = this.results.download;
+    
+    // Helper function to set class
+    const setClass = (element, className) => {
+      element.classList.remove('supported', 'moderate', 'unsupported', 'testing');
+      element.classList.add(className);
+    };
+    
+    // HD Video - only needs download speed
+    const hdElement = document.getElementById('streamingHD');
+    if (downloadSpeed >= 5) {
+      setClass(hdElement, 'supported');
+    } else if (downloadSpeed >= 3) {
+      setClass(hdElement, 'moderate');
+    } else {
+      setClass(hdElement, 'unsupported');
+    }
+    
+    // 4K Video - only needs download speed
+    const fourKElement = document.getElementById('streaming4K');
+    if (downloadSpeed >= 25) {
+      setClass(fourKElement, 'supported');
+    } else if (downloadSpeed >= 15) {
+      setClass(fourKElement, 'moderate');
+    } else {
+      setClass(fourKElement, 'unsupported');
+    }
+  }
+
+  setUploadDependentStatsToTesting() {
+    const chatElement = document.getElementById('videoChat');
+    const gameElement = document.getElementById('gaming');
+    
+    chatElement.classList.remove('supported', 'moderate', 'unsupported', 'testing');
+    gameElement.classList.remove('supported', 'moderate', 'unsupported', 'testing');
+    
+    chatElement.classList.add('testing');
+    gameElement.classList.add('testing');
+  }
+
+  updateStreamingStats() {
+    const downloadSpeed = this.results.download;
+    const uploadSpeed = this.results.upload;
+    const ping = this.results.ping;
+    
+    // Helper function to set class
+    const setClass = (element, className) => {
+      element.classList.remove('supported', 'moderate', 'unsupported', 'testing');
+      element.classList.add(className);
+    };
+    
+    // HD Video - only needs download speed
+    const hdElement = document.getElementById('streamingHD');
+    if (downloadSpeed >= 5) {
+      setClass(hdElement, 'supported');
+    } else if (downloadSpeed >= 3) {
+      setClass(hdElement, 'moderate');
+    } else {
+      setClass(hdElement, 'unsupported');
+    }
+    
+    // 4K Video - only needs download speed
+    const fourKElement = document.getElementById('streaming4K');
+    if (downloadSpeed >= 25) {
+      setClass(fourKElement, 'supported');
+    } else if (downloadSpeed >= 15) {
+      setClass(fourKElement, 'moderate');
+    } else {
+      setClass(fourKElement, 'unsupported');
+    }
+    
+    // Video Chat - needs both download and upload, plus good ping
+    const chatElement = document.getElementById('videoChat');
+    if (downloadSpeed >= 3 && uploadSpeed >= 3 && ping <= 100) {
+      setClass(chatElement, 'supported');
+    } else if ((downloadSpeed >= 2 && uploadSpeed >= 2) || (downloadSpeed >= 3 && uploadSpeed >= 1) || (downloadSpeed >= 1 && uploadSpeed >= 3)) {
+      setClass(chatElement, 'moderate');
+    } else {
+      setClass(chatElement, 'unsupported');
+    }
+    
+    // Gaming - needs both download and upload, plus low ping
+    const gameElement = document.getElementById('gaming');
+    if (downloadSpeed >= 10 && uploadSpeed >= 5 && ping <= 50) {
+      setClass(gameElement, 'supported');
+    } else if ((downloadSpeed >= 8 && uploadSpeed >= 3) || (downloadSpeed >= 5 && uploadSpeed >= 5) || (downloadSpeed >= 10 && uploadSpeed >= 2)) {
+      setClass(gameElement, 'moderate');
+    } else {
+      setClass(gameElement, 'unsupported');
+    }
+  }
+
+  handleError(error) {
+    this.statusText.textContent = 'Error: ' + error;
+    this.isRunning = false;
+    
+    // Clean up memory
+    this.cleanup();
+    
+    // Reset button state
+    this.goButton.disabled = false;
+    this.singleThreadedToggle.disabled = false; // Re-enable toggle on error
+    this.goButton.classList.remove('fade-out');
+    this.goButton.style.display = 'block';
+    this.speedGaugeContainer.style.display = 'none';
+    
+    // Show the IP/Server info again
+    const goButtonInfo = document.getElementById('goButtonInfo');
+    goButtonInfo.style.display = 'flex';
+    
+    // Resume periodic cleanup after error
+    this.cleanupInterval = setInterval(() => {
+      this.periodicCleanup();
+    }, 30000);
+    
+    // Reset metrics to show error state
+    this.liveDownloadSpeed.textContent = 'Error';
+    this.liveUploadSpeed.textContent = 'Error';
+    this.livePingValue.textContent = 'Error';
+    this.liveJitterValue.textContent = 'Error';
+  }
+
+  // Memory cleanup method
+  cleanup() {
+    // Clear all active intervals
+    this.activeIntervals.forEach(interval => {
+      clearInterval(interval);
+    });
+    this.activeIntervals.clear();
+    
+    // Clear all active timeouts
+    this.activeTimeouts.forEach(timeout => {
+      clearTimeout(timeout);
+    });
+    this.activeTimeouts.clear();
+    
+    // Close all active streams
+    this.activeStreams.forEach(stream => {
+      if (stream && typeof stream.cancel === 'function') {
+        stream.cancel();
+      }
+    });
+    this.activeStreams.clear();
+    
+    // Close all active readers
+    this.activeReaders.forEach(reader => {
+      if (reader && typeof reader.cancel === 'function') {
+        reader.cancel();
+      }
+    });
+    this.activeReaders.clear();
+    
+    // Abort all active responses
+    this.activeResponses.forEach(response => {
+      if (response && typeof response.abort === 'function') {
+        response.abort();
+      }
+    });
+    this.activeResponses.clear();
+    
+    // Force garbage collection if available
+    if (window.gc) {
+      window.gc();
+    }
+    
+    console.log('🧹 Memory cleanup completed');
+  }
+
+  // Periodic cleanup to prevent memory leaks
+  periodicCleanup() {
+    // Only run cleanup if not actively testing
+    if (!this.isRunning) {
+      // Clear any orphaned resources
+      this.activeStreams.clear();
+      this.activeReaders.clear();
+      this.activeResponses.clear();
+      
+      // Force garbage collection if available
+      if (window.gc) {
+        window.gc();
+      }
+      
+      console.log('🔄 Periodic cleanup completed');
+    } else {
+      // If test is running, just skip cleanup silently
+      console.log('⏸️ Skipping cleanup - test in progress');
+    }
+  }
+
+  delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  // Memory monitoring
+  logMemoryUsage() {
+    if (performance.memory) {
+      const memory = performance.memory;
+      const usedMB = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+      const limitMB = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
+      const usagePercent = Math.round((usedMB / limitMB) * 100);
+      
+      console.log(`📊 Memory Usage:`, {
+        used: usedMB + 'MB',
+        total: Math.round(memory.totalJSHeapSize / 1024 / 1024) + 'MB',
+        limit: limitMB + 'MB',
+        usage: usagePercent + '%'
+      });
+      
+      // Warn if memory usage is high (console only)
+      if (usagePercent > 80) {
+        console.warn(`⚠️ High memory usage: ${usagePercent}% - consider refreshing the page`);
+      }
+    }
+  }
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  const speedTest = new ModernSpeedTest();
+  
+  console.log("Tidewater Telecom Speed Test Loaded!");
+  console.log("Now Press the Start Button or HIT Enter.");
+  console.log("Testing your connection to Tidewater Telecom's O.P.E.N.™ fiber network.");
+});
