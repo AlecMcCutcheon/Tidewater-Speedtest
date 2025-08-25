@@ -1813,9 +1813,15 @@ function initThreadConfiguration() {
                   window.clientPublicIP = '';
                 }
                 try {
-                  fetch('https://openspeedtest.com/get_ip', { cache: 'no-store' })
-                    .then(function(r){ return r.text(); })
-                    .then(function(t){ window.clientPublicIP = (t||'').trim(); })
+                  // OLD CODE - KEEP UNTIL CONFIRMED WORKING
+                  // fetch('https://openspeedtest.com/get_ip', { cache: 'no-store' })
+                  //   .then(function(r){ return r.text(); })
+                  //   .then(function(t){ window.clientPublicIP = (t||'').trim(); })
+                  //   .catch(function(){ /* ignore */ });
+                  // NEW: use api.ipify.org (CORS-friendly JSON)
+                  fetch('https://api.ipify.org/?format=json', { cache: 'no-store' })
+                    .then(function(r){ return r.json(); })
+                    .then(function(j){ window.clientPublicIP = (j && j.ip ? (''+j.ip).trim() : ''); })
                     .catch(function(){ /* ignore */ });
                 } catch(e) { /* ignore */ }
                 var sipIP = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : (typeof TestServerip === 'string' ? TestServerip : '');
