@@ -1808,6 +1808,17 @@ function initThreadConfiguration() {
                 var jitMs = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? jitterEstimate : 0;
                 var host  = (typeof myhostName === 'string') ? myhostName : '';
                 var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
+                // NEW CODE - TESTING: fetch client public IP for result payload (sip)
+                if (typeof window.clientPublicIP === 'undefined') {
+                  window.clientPublicIP = '';
+                }
+                try {
+                  fetch('https://openspeedtest.com/get_ip', { cache: 'no-store' })
+                    .then(function(r){ return r.text(); })
+                    .then(function(t){ window.clientPublicIP = (t||'').trim(); })
+                    .catch(function(){ /* ignore */ });
+                } catch(e) { /* ignore */ }
+                var sipIP = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : (typeof TestServerip === 'string' ? TestServerip : '');
                 // Mirror the portal format keys where possible
                 saveTestData =
                   'r=l' +
@@ -1818,10 +1829,12 @@ function initThreadConfiguration() {
                   '&p='   + encodeURIComponent(pMs) +
                   '&jit=' + encodeURIComponent(jitMs) +
                   '&do='  + encodeURIComponent(host) +
+                  '&sip=' + encodeURIComponent(sipIP) +
                   '&ua='  + encodeURIComponent(uaStr);
               } catch (e) {
                 // Fallback to minimal payload
-                saveTestData = 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0);
+                var sipIP2 = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : '';
+                saveTestData = 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0) + '&sip=' + encodeURIComponent(sipIP2);
               }
               ServerConnect(5);
             }
