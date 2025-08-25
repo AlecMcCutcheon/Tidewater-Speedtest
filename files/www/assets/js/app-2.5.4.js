@@ -20,8 +20,8 @@ var dynamicThreadCount = 6; // Will be calculated based on CPU cores
 function calculateOptimalThreads() {
   if (navigator.hardwareConcurrency) {
     var cores = navigator.hardwareConcurrency;
-    // Use 75% of available cores for optimal performance
-    var optimalThreads = Math.round(cores * 0.75);
+    // Use 50% of available cores for optimal performance
+    var optimalThreads = Math.round(cores * 0.5);
     // Ensure minimum of 1 thread and maximum of available cores
     return Math.max(1, Math.min(optimalThreads, cores));
   }
@@ -94,16 +94,29 @@ function updateThreadCount() {
         if (dynamicLabel) dynamicLabel.classList.add('active');
         // Update tooltip with actual thread count
         var cores = navigator.hardwareConcurrency || 4;
-        var dynamicThreads = Math.max(1, Math.min(Math.round(cores * 0.75), cores));
-        var dynamicTooltip = 'Dynamic: Uses 75% of logical processors for threads (' + dynamicThreads + ')';
+        var dynamicThreads = Math.max(1, Math.min(Math.round(cores * 0.5), cores));
+        var dynamicTooltip = 'Dynamic: Uses 50% of logical processors for threads (' + dynamicThreads + ')';
         threadTypeBtn.setAttribute('data-tooltip-current', dynamicTooltip);
+        
+        // Also update the wrapper div's tooltip
+        var tooltipWrapper = threadTypeBtn.closest('.tooltip-wrapper');
+        if (tooltipWrapper) {
+          tooltipWrapper.setAttribute('data-tooltip-current', dynamicTooltip);
+        }
       } else {
         threadTypeBtn.classList.remove('active');
         // Update side label colors
         if (defaultLabel) defaultLabel.classList.add('active');
         if (dynamicLabel) dynamicLabel.classList.remove('active');
-        // Update tooltip
-        threadTypeBtn.setAttribute('data-tooltip-current', threadTypeBtn.getAttribute('data-tooltip-default'));
+        // Update tooltip - get the default tooltip from the wrapper div
+        var tooltipWrapper = threadTypeBtn.closest('.tooltip-wrapper');
+        var defaultTooltip = tooltipWrapper ? tooltipWrapper.getAttribute('data-tooltip-default') : 'Default: Uses 6 threads for download and upload';
+        threadTypeBtn.setAttribute('data-tooltip-current', defaultTooltip);
+        
+        // Also update the wrapper div's tooltip
+        if (tooltipWrapper) {
+          tooltipWrapper.setAttribute('data-tooltip-current', defaultTooltip);
+        }
       }
     }
   }
@@ -486,6 +499,14 @@ function initThreadConfiguration() {
   };
 
   openSpeedtestShow.prototype.Graph = function(speed, select) {
+    // Apply speed clamps if enabled
+    if (window.speedClamp && window.speedClamp.download && window.speedClamp.download.enabled && select === 0 && speed > window.speedClamp.download.max) {
+      speed = window.speedClamp.download.max;
+    }
+    if (window.speedClamp && window.speedClamp.upload && window.speedClamp.upload.enabled && select === 1 && speed > window.speedClamp.upload.max) {
+      speed = window.speedClamp.upload.max;
+    }
+    
     // Update Chart.js charts only
     if (speed > 0) {
       if (select === 0) {
@@ -536,6 +557,14 @@ function initThreadConfiguration() {
     
     if (speed < 0) {
       speed = 0;
+    }
+    
+    // Apply speed clamps if enabled (only for the current test type)
+    if (Status === "Downloading" && window.speedClamp && window.speedClamp.download && window.speedClamp.download.enabled && speed > window.speedClamp.download.max) {
+      speed = window.speedClamp.download.max;
+    }
+    if (Status === "Uploading" && window.speedClamp && window.speedClamp.upload && window.speedClamp.upload.enabled && speed > window.speedClamp.upload.max) {
+      speed = window.speedClamp.upload.max;
     }
     
     var currentTime = Date.now();
@@ -713,7 +742,7 @@ function initThreadConfiguration() {
       } else {
         uploadElement.textContent = upload.toFixed(1);
       }
-      uploadStatus.textContent = 'Complete';
+      uploadStatus.textContent = 'Done';
       uploadStatus.className = 'metric-status';
     }
     
@@ -768,7 +797,7 @@ function initThreadConfiguration() {
         var pingStatus = document.getElementById('ping-status');
         if (pingElement) {
           pingElement.textContent = Math.floor(ShowData);
-          pingStatus.textContent = 'Complete';
+          pingStatus.textContent = 'Done';
           pingStatus.className = 'metric-status';
         }
         
@@ -783,7 +812,7 @@ function initThreadConfiguration() {
         var pingStatus = document.getElementById('ping-status');
         if (pingElement) {
           pingElement.textContent = ShowData;
-          pingStatus.textContent = 'Complete';
+          pingStatus.textContent = 'Done';
           pingStatus.className = 'metric-status';
         }
         
@@ -813,7 +842,7 @@ function initThreadConfiguration() {
       } else {
         downloadElement.textContent = download.toFixed(1);
       }
-      downloadStatus.textContent = 'Complete';
+      downloadStatus.textContent = 'Done';
       downloadStatus.className = 'metric-status';
     }
     
@@ -861,7 +890,7 @@ function initThreadConfiguration() {
         var jitterStatus = document.getElementById('jitter-status');
         if (jitterElement) {
           jitterElement.textContent = Math.floor(ShowData);
-          jitterStatus.textContent = 'Complete';
+          jitterStatus.textContent = 'Done';
           jitterStatus.className = 'metric-status';
         }
       } else if (ShowData >= 0 && ShowData < 1) {
@@ -873,7 +902,7 @@ function initThreadConfiguration() {
         var jitterStatus = document.getElementById('jitter-status');
         if (jitterElement) {
           jitterElement.textContent = ShowData;
-          jitterStatus.textContent = 'Complete';
+          jitterStatus.textContent = 'Done';
           jitterStatus.className = 'metric-status';
         }
       }
@@ -881,6 +910,17 @@ function initThreadConfiguration() {
   };
   openSpeedtestShow.prototype.LiveSpeed = function(data, Display) {
     var ShowData = data;
+    
+    // Apply speed clamps if enabled (only for speed data, not countdown or ping, and only for current test type)
+    if (Display !== "countDown" && Display !== "Ping" && typeof ShowData === "number") {
+      if (Status === "Downloading" && window.speedClamp && window.speedClamp.download && window.speedClamp.download.enabled && ShowData > window.speedClamp.download.max) {
+        ShowData = window.speedClamp.download.max;
+      }
+      if (Status === "Uploading" && window.speedClamp && window.speedClamp.upload && window.speedClamp.upload.enabled && ShowData > window.speedClamp.upload.max) {
+        ShowData = window.speedClamp.upload.max;
+      }
+    }
+    
     if (Display === "countDown") {
       var speed = ShowData.toFixed(0);
       updateModernSpeed(speed);
@@ -977,6 +1017,15 @@ function initThreadConfiguration() {
       }
       Self.FinalSpeed = Self.ArraySum(Self.SpeedSamples) / Self.SpeedSamples.length;
     }
+    
+    // Apply speed clamps if enabled (only for the current test type)
+    if (Status === "Downloading" && window.speedClamp && window.speedClamp.download && window.speedClamp.download.enabled && Self.FinalSpeed > window.speedClamp.download.max) {
+      Self.FinalSpeed = window.speedClamp.download.max;
+    }
+    if (Status === "Uploading" && window.speedClamp && window.speedClamp.upload && window.speedClamp.upload.enabled && Self.FinalSpeed > window.speedClamp.upload.max) {
+      Self.FinalSpeed = window.speedClamp.upload.max;
+    }
+    
     return Self.FinalSpeed;
   };
   openSpeedtestGet.prototype.uRandom = function(size, callback) {
@@ -1214,24 +1263,24 @@ function initThreadConfiguration() {
       var jitterStatus = document.getElementById('jitter-status');
       
       if (downloadStatus) {
-        downloadStatus.textContent = 'Ready to start';
+        downloadStatus.textContent = 'Ready';
         downloadStatus.className = 'metric-status';
       }
       if (uploadStatus) {
-        uploadStatus.textContent = 'Ready to start';
+        uploadStatus.textContent = 'Ready';
         uploadStatus.className = 'metric-status';
       }
       if (pingStatus) {
-        pingStatus.textContent = 'Ready to start';
+        pingStatus.textContent = 'Ready';
         pingStatus.className = 'metric-status';
       }
       if (jitterStatus) {
-        jitterStatus.textContent = 'Ready to start';
+        jitterStatus.textContent = 'Ready';
         jitterStatus.className = 'metric-status';
       }
       
       // Reset progress status
-      updateModernStatus('Ready to start');
+      updateModernStatus('Ready');
       
       // Hide any error messages
       var errorContainer = document.getElementById('modern-error-container');
@@ -2223,7 +2272,7 @@ function hideModernError() {
   
   function resetModernProgress() {
   updateModernProgress(0, 'download');
-  updateModernStatus('Ready to start');
+  updateModernStatus('Ready');
   updateModernSpeed('--');
   hideModernError();
 }
