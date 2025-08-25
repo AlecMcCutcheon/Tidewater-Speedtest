@@ -1798,6 +1798,31 @@ function initThreadConfiguration() {
           // Legacy SVG elements removed - modern UI handles completion
           if (location.hostname != myname.toLowerCase() + com) {
             if (saveData) {
+              // NEW CODE - TESTING: build urlencoded payload for result posting
+              try {
+                var dMbps = (typeof downloadSpeed === 'number' && isFinite(downloadSpeed)) ? downloadSpeed : 0;
+                var uMbps = (typeof uploadSpeed === 'number' && isFinite(uploadSpeed)) ? uploadSpeed : 0;
+                var ddMb  = (typeof dataUsedfordl === 'number' && isFinite(dataUsedfordl)) ? (dataUsedfordl / 1048576) : 0;
+                var udMb  = (typeof dataUsedforul === 'number' && isFinite(dataUsedforul)) ? (dataUsedforul / 1048576) : 0;
+                var pMs   = (typeof pingEstimate === 'number' && isFinite(pingEstimate)) ? pingEstimate : 0;
+                var jitMs = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? jitterEstimate : 0;
+                var host  = (typeof myhostName === 'string') ? myhostName : '';
+                var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
+                // Mirror the portal format keys where possible
+                saveTestData =
+                  'r=l' +
+                  '&d='   + encodeURIComponent(dMbps) +
+                  '&u='   + encodeURIComponent(uMbps) +
+                  '&dd='  + encodeURIComponent(ddMb) +
+                  '&ud='  + encodeURIComponent(udMb) +
+                  '&p='   + encodeURIComponent(pMs) +
+                  '&jit=' + encodeURIComponent(jitMs) +
+                  '&do='  + encodeURIComponent(host) +
+                  '&ua='  + encodeURIComponent(uaStr);
+              } catch (e) {
+                // Fallback to minimal payload
+                saveTestData = 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0);
+              }
               ServerConnect(5);
             }
           } else {
