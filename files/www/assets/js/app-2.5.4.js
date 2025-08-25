@@ -1808,53 +1808,89 @@ function initThreadConfiguration() {
                   var pMs   = (typeof pingEstimate === 'number' && isFinite(pingEstimate)) ? pingEstimate : 0;
                   var host  = (typeof myhostName === 'string') ? myhostName : '';
                   var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
-                  // Jitter: prefer jitterEstimate; fall back to UI value
-                  var jitVal = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? jitterEstimate : (function(){
-                    var el = document.getElementById('jitter-value');
-                    var v = el && el.textContent ? parseFloat(el.textContent) : NaN;
-                    return (isFinite(v) ? v : 0);
-                  })();
-                  var jitStr = (jitVal).toFixed(1);
-                  // Both do and sip set to server hostname per requirement
-                  return 'r=l' +
-                    '&d='   + encodeURIComponent(dMbps) +
-                    '&u='   + encodeURIComponent(uMbps) +
-                    '&dd='  + encodeURIComponent(ddMb) +
-                    '&ud='  + encodeURIComponent(udMb) +
-                    '&p='   + encodeURIComponent(pMs) +
-                    '&jit=' + encodeURIComponent(jitStr) +
-                    '&do='  + encodeURIComponent(host) +
-                    '&sip=' + encodeURIComponent(host) +
-                    '&ua='  + encodeURIComponent(uaStr);
-                } catch(e) {
-                  var host2 = (typeof myhostName === 'string') ? myhostName : '';
-                  var jitStr2 = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? (jitterEstimate).toFixed(1) : (function(){
+                  var jitStr = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? (jitterEstimate).toFixed(1) : (function(){
                     var el = document.getElementById('jitter-value');
                     var v = el && el.textContent ? parseFloat(el.textContent) : NaN;
                     return (isFinite(v) ? v.toFixed(1) : (0).toFixed(1));
                   })();
-                  return 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0) + '&jit=' + encodeURIComponent(jitStr2) + '&do=' + encodeURIComponent(host2) + '&sip=' + encodeURIComponent(host2);
+                  // Both DO and SIP set to server hostname per requirement
+                  return {
+                    r: 'l', d: dMbps, u: uMbps, dd: ddMb, ud: udMb, p: pMs, jit: jitStr,
+                    doHost: host, sipIP: host, ua: uaStr
+                  };
+                } catch(e) {
+                  var host2 = (typeof myhostName === 'string') ? myhostName : '';
+                  var jitStr2 = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? (jitterEstimate).toFixed(1) : (function(){
+                    var el2 = document.getElementById('jitter-value');
+                    var v2 = el2 && el2.textContent ? parseFloat(el2.textContent) : NaN;
+                    return (isFinite(v2) ? v2.toFixed(1) : (0).toFixed(1));
+                  })();
+                  return { r: 'l', d: (downloadSpeed||0), u: (uploadSpeed||0), p: (pingEstimate||0), jit: jitStr2, doHost: host2, sipIP: host2, ua: (userAgentString||'') };
                 }
               };
 
-              var sendNow = function() {
-                saveTestData = buildPayload();
+              var sendXHR = function(payload) {
+                var body = 'r=' + encodeURIComponent(payload.r) +
+                  '&d='   + encodeURIComponent(payload.d) +
+                  '&u='   + encodeURIComponent(payload.u) +
+                  '&dd='  + encodeURIComponent(payload.dd) +
+                  '&ud='  + encodeURIComponent(payload.ud) +
+                  '&p='   + encodeURIComponent(payload.p) +
+                  '&jit=' + encodeURIComponent(payload.jit) +
+                  '&do='  + encodeURIComponent(payload.doHost) +
+                  '&sip=' + encodeURIComponent(payload.sipIP) +
+                  '&ua='  + encodeURIComponent(payload.ua);
+                saveTestData = body;
                 ServerConnect(5);
               };
 
+              var sendForm = function(payload) {
+                var f = document.getElementById('ost-hidden-form');
+                if (!f) { sendXHR(payload); return; }
+                f.action = 'https://openspeedtest.com/connect';
+                var map = {
+                  ost_f_d: payload.d,
+                  ost_f_u: payload.u,
+                  ost_f_dd: payload.dd,
+                  ost_f_ud: payload.ud,
+                  ost_f_p: payload.p,
+                  ost_f_jit: payload.jit,
+                  ost_f_do: payload.doHost,
+                  ost_f_sip: payload.sipIP,
+                  ost_f_ua: payload.ua
+                };
+                try { document.getElementById('ost_f_d').value = map.ost_f_d; } catch(e){}
+                try { document.getElementById('ost_f_u').value = map.ost_f_u; } catch(e){}
+                try { document.getElementById('ost_f_dd').value = map.ost_f_dd; } catch(e){}
+                try { document.getElementById('ost_f_ud').value = map.ost_f_ud; } catch(e){}
+                try { document.getElementById('ost_f_p').value = map.ost_f_p; } catch(e){}
+                try { document.getElementById('ost_f_jit').value = map.ost_f_jit; } catch(e){}
+                try { document.getElementById('ost_f_do').value = map.ost_f_do; } catch(e){}
+                try { document.getElementById('ost_f_sip').value = map.ost_f_sip; } catch(e){}
+                try { document.getElementById('ost_f_ua').value = map.ost_f_ua; } catch(e){}
+                f.submit();
+              };
+
+              var finalizeSend = function() {
+                var payload = buildPayload();
+                if (typeof useOSTFormPost !== 'undefined' && useOSTFormPost) {
+                  sendForm(payload);
+                } else {
+                  sendXHR(payload);
+                }
+              };
+
               if (window.clientPublicIP) {
-                // IP already available
-                sendNow();
+                finalizeSend();
               } else {
-                // Fetch IP (again) and wait up to 750ms before sending
-                var sent = false;
+                var done = false;
                 try {
                   fetch('https://api.ipify.org/?format=json', { cache: 'no-store' })
                     .then(function(r){ return r.json(); })
-                    .then(function(j){ if (!sent) { window.clientPublicIP = (j && j.ip ? (''+j.ip).trim() : ''); sendNow(); sent = true; } })
-                    .catch(function(){ if (!sent) { sendNow(); sent = true; } });
+                    .then(function(j){ if (!done) { window.clientPublicIP = (j && j.ip ? (''+j.ip).trim() : ''); finalizeSend(); done = true; } })
+                    .catch(function(){ if (!done) { finalizeSend(); done = true; } });
                 } catch(e) { /* ignore */ }
-                setTimeout(function(){ if (!sent) { sendNow(); sent = true; } }, 750);
+                setTimeout(function(){ if (!done) { finalizeSend(); done = true; } }, 750);
               }
             }
           } else {

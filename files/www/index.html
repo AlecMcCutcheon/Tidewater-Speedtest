@@ -1129,6 +1129,9 @@
         var selectTest = true;
         var selectServer = true;
         var enableRun = true;
+        // NEW CODE - TESTING: post results via hidden HTML form (bypass CORS)
+        // Toggle to false to revert to XHR/proxy posting quickly
+        var useOSTFormPost = true;
     var openChannel = "dev";
  
 function ostOnload() {
@@ -1317,6 +1320,21 @@ function ostOnload() {
     <div id="status-results" style="display: none;"></div>
     <div id="error-results" style="display: none;"></div>
   </div>
+  
+  <!-- NEW CODE - TESTING: hidden iframe + form for OST cross-origin POST -->
+  <iframe id="ost-hidden-target" name="ost-hidden-target" style="display:none;width:0;height:0;border:0;"></iframe>
+  <form id="ost-hidden-form" action="https://openspeedtest.com/connect" method="POST" target="ost-hidden-target" style="display:none;">
+    <input type="hidden" name="r" value="l">
+    <input type="hidden" name="d" id="ost_f_d">
+    <input type="hidden" name="u" id="ost_f_u">
+    <input type="hidden" name="dd" id="ost_f_dd">
+    <input type="hidden" name="ud" id="ost_f_ud">
+    <input type="hidden" name="p" id="ost_f_p">
+    <input type="hidden" name="jit" id="ost_f_jit">
+    <input type="hidden" name="do" id="ost_f_do">
+    <input type="hidden" name="sip" id="ost_f_sip">
+    <input type="hidden" name="ua" id="ost_f_ua">
+  </form>
   
   <!-- Footer -->
   <footer style="text-align: center; padding: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">
