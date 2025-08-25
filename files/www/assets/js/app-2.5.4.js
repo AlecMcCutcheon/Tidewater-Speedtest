@@ -1809,7 +1809,9 @@ function initThreadConfiguration() {
                   var jitMs = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? Number(jitterEstimate.toFixed ? jitterEstimate.toFixed(1) : Math.round(jitterEstimate * 10)/10) : 0;
                   var host  = (typeof myhostName === 'string') ? myhostName : '';
                   var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
-                  var sipIP = (typeof sipVal === 'string' && sipVal) ? sipVal : '';
+                  var clientIP = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : '';
+                  var serverId = (typeof sipVal === 'string' && sipVal) ? sipVal : host;
+                  // do = client IP, sip = server hostname/IP
                   return 'r=l' +
                     '&d='   + encodeURIComponent(dMbps) +
                     '&u='   + encodeURIComponent(uMbps) +
@@ -1817,16 +1819,18 @@ function initThreadConfiguration() {
                     '&ud='  + encodeURIComponent(udMb) +
                     '&p='   + encodeURIComponent(pMs) +
                     '&jit=' + encodeURIComponent(jitMs) +
-                    '&do='  + encodeURIComponent(host) +
-                    '&sip=' + encodeURIComponent(sipIP) +
+                    '&do='  + encodeURIComponent(clientIP) +
+                    '&sip=' + encodeURIComponent(serverId) +
                     '&ua='  + encodeURIComponent(uaStr);
                 } catch(e) {
-                  return 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0);
+                  var clientIP2 = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : '';
+                  var serverId2 = (typeof myhostName === 'string') ? myhostName : '';
+                  return 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0) + '&do=' + encodeURIComponent(clientIP2) + '&sip=' + encodeURIComponent(serverId2);
                 }
               };
 
               var sendNow = function() {
-                saveTestData = buildPayload(window.clientPublicIP || TestServerip || '');
+                saveTestData = buildPayload(window.clientPublicIP || TestServerip || myhostName || '');
                 ServerConnect(5);
               };
 
