@@ -1122,7 +1122,9 @@
         var ulThreads = 6;
         var setHTTPReq = true;
         var saveData = true;
-        var saveDataURL = "https://openspeedtest.com/connect";
+        var saveDataURL = "//openspeedtest.com/connect";
+        // Ensure OpenSpeedTestdb exists for ServerConnect initialization
+        var OpenSpeedTestdb = saveDataURL;
         var stressTest = true;
         var selectTest = true;
         var selectServer = true;
