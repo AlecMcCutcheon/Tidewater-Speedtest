@@ -1798,51 +1798,52 @@ function initThreadConfiguration() {
           // Legacy SVG elements removed - modern UI handles completion
           if (location.hostname != myname.toLowerCase() + com) {
             if (saveData) {
-              // NEW CODE - TESTING: build urlencoded payload for result posting
-              try {
-                var dMbps = (typeof downloadSpeed === 'number' && isFinite(downloadSpeed)) ? downloadSpeed : 0;
-                var uMbps = (typeof uploadSpeed === 'number' && isFinite(uploadSpeed)) ? uploadSpeed : 0;
-                var ddMb  = (typeof dataUsedfordl === 'number' && isFinite(dataUsedfordl)) ? (dataUsedfordl / 1048576) : 0;
-                var udMb  = (typeof dataUsedforul === 'number' && isFinite(dataUsedforul)) ? (dataUsedforul / 1048576) : 0;
-                var pMs   = (typeof pingEstimate === 'number' && isFinite(pingEstimate)) ? pingEstimate : 0;
-                var jitMs = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? jitterEstimate : 0;
-                var host  = (typeof myhostName === 'string') ? myhostName : '';
-                var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
-                // NEW CODE - TESTING: fetch client public IP for result payload (sip)
-                if (typeof window.clientPublicIP === 'undefined') {
-                  window.clientPublicIP = '';
-                }
+              // NEW CODE - TESTING: wait briefly for clientPublicIP, send jitter with one decimal
+              var buildPayload = function(sipVal) {
                 try {
-                  // OLD CODE - KEEP UNTIL CONFIRMED WORKING
-                  // fetch('https://openspeedtest.com/get_ip', { cache: 'no-store' })
-                  //   .then(function(r){ return r.text(); })
-                  //   .then(function(t){ window.clientPublicIP = (t||'').trim(); })
-                  //   .catch(function(){ /* ignore */ });
-                  // NEW: use api.ipify.org (CORS-friendly JSON)
+                  var dMbps = (typeof downloadSpeed === 'number' && isFinite(downloadSpeed)) ? downloadSpeed : 0;
+                  var uMbps = (typeof uploadSpeed === 'number' && isFinite(uploadSpeed)) ? uploadSpeed : 0;
+                  var ddMb  = (typeof dataUsedfordl === 'number' && isFinite(dataUsedfordl)) ? (dataUsedfordl / 1048576) : 0;
+                  var udMb  = (typeof dataUsedforul === 'number' && isFinite(dataUsedforul)) ? (dataUsedforul / 1048576) : 0;
+                  var pMs   = (typeof pingEstimate === 'number' && isFinite(pingEstimate)) ? pingEstimate : 0;
+                  var jitMs = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? Number(jitterEstimate.toFixed ? jitterEstimate.toFixed(1) : Math.round(jitterEstimate * 10)/10) : 0;
+                  var host  = (typeof myhostName === 'string') ? myhostName : '';
+                  var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
+                  var sipIP = (typeof sipVal === 'string' && sipVal) ? sipVal : '';
+                  return 'r=l' +
+                    '&d='   + encodeURIComponent(dMbps) +
+                    '&u='   + encodeURIComponent(uMbps) +
+                    '&dd='  + encodeURIComponent(ddMb) +
+                    '&ud='  + encodeURIComponent(udMb) +
+                    '&p='   + encodeURIComponent(pMs) +
+                    '&jit=' + encodeURIComponent(jitMs) +
+                    '&do='  + encodeURIComponent(host) +
+                    '&sip=' + encodeURIComponent(sipIP) +
+                    '&ua='  + encodeURIComponent(uaStr);
+                } catch(e) {
+                  return 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0);
+                }
+              };
+
+              var sendNow = function() {
+                saveTestData = buildPayload(window.clientPublicIP || TestServerip || '');
+                ServerConnect(5);
+              };
+
+              if (window.clientPublicIP) {
+                // IP already available
+                sendNow();
+              } else {
+                // Fetch IP (again) and wait up to 750ms before sending
+                var sent = false;
+                try {
                   fetch('https://api.ipify.org/?format=json', { cache: 'no-store' })
                     .then(function(r){ return r.json(); })
-                    .then(function(j){ window.clientPublicIP = (j && j.ip ? (''+j.ip).trim() : ''); })
-                    .catch(function(){ /* ignore */ });
+                    .then(function(j){ if (!sent) { window.clientPublicIP = (j && j.ip ? (''+j.ip).trim() : ''); sendNow(); sent = true; } })
+                    .catch(function(){ if (!sent) { sendNow(); sent = true; } });
                 } catch(e) { /* ignore */ }
-                var sipIP = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : (typeof TestServerip === 'string' ? TestServerip : '');
-                // Mirror the portal format keys where possible
-                saveTestData =
-                  'r=l' +
-                  '&d='   + encodeURIComponent(dMbps) +
-                  '&u='   + encodeURIComponent(uMbps) +
-                  '&dd='  + encodeURIComponent(ddMb) +
-                  '&ud='  + encodeURIComponent(udMb) +
-                  '&p='   + encodeURIComponent(pMs) +
-                  '&jit=' + encodeURIComponent(jitMs) +
-                  '&do='  + encodeURIComponent(host) +
-                  '&sip=' + encodeURIComponent(sipIP) +
-                  '&ua='  + encodeURIComponent(uaStr);
-              } catch (e) {
-                // Fallback to minimal payload
-                var sipIP2 = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : '';
-                saveTestData = 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0) + '&sip=' + encodeURIComponent(sipIP2);
+                setTimeout(function(){ if (!sent) { sendNow(); sent = true; } }, 750);
               }
-              ServerConnect(5);
             }
           } else {
             ServerConnect(3);
