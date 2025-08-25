@@ -1799,7 +1799,7 @@ function initThreadConfiguration() {
           if (location.hostname != myname.toLowerCase() + com) {
             if (saveData) {
               // NEW CODE - TESTING: wait briefly for clientPublicIP, send jitter with one decimal
-              var buildPayload = function(sipVal) {
+              var buildPayload = function() {
                 try {
                   var dMbps = (typeof downloadSpeed === 'number' && isFinite(downloadSpeed)) ? downloadSpeed : 0;
                   var uMbps = (typeof uploadSpeed === 'number' && isFinite(uploadSpeed)) ? uploadSpeed : 0;
@@ -1808,9 +1808,14 @@ function initThreadConfiguration() {
                   var pMs   = (typeof pingEstimate === 'number' && isFinite(pingEstimate)) ? pingEstimate : 0;
                   var host  = (typeof myhostName === 'string') ? myhostName : '';
                   var uaStr = (typeof userAgentString === 'string') ? userAgentString : '';
-                  var clientIP = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : '';
-                  var jitStr = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? (jitterEstimate).toFixed(1) : (0).toFixed(1);
-                  // do = client IP, sip = server hostname (always)
+                  // Jitter: prefer jitterEstimate; fall back to UI value
+                  var jitVal = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? jitterEstimate : (function(){
+                    var el = document.getElementById('jitter-value');
+                    var v = el && el.textContent ? parseFloat(el.textContent) : NaN;
+                    return (isFinite(v) ? v : 0);
+                  })();
+                  var jitStr = (jitVal).toFixed(1);
+                  // Both do and sip set to server hostname per requirement
                   return 'r=l' +
                     '&d='   + encodeURIComponent(dMbps) +
                     '&u='   + encodeURIComponent(uMbps) +
@@ -1818,19 +1823,22 @@ function initThreadConfiguration() {
                     '&ud='  + encodeURIComponent(udMb) +
                     '&p='   + encodeURIComponent(pMs) +
                     '&jit=' + encodeURIComponent(jitStr) +
-                    '&do='  + encodeURIComponent(clientIP) +
+                    '&do='  + encodeURIComponent(host) +
                     '&sip=' + encodeURIComponent(host) +
                     '&ua='  + encodeURIComponent(uaStr);
                 } catch(e) {
-                  var clientIP2 = (typeof window.clientPublicIP === 'string' && window.clientPublicIP) ? window.clientPublicIP : '';
                   var host2 = (typeof myhostName === 'string') ? myhostName : '';
-                  var jitStr2 = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? (jitterEstimate).toFixed(1) : (0).toFixed(1);
-                  return 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0) + '&jit=' + encodeURIComponent(jitStr2) + '&do=' + encodeURIComponent(clientIP2) + '&sip=' + encodeURIComponent(host2);
+                  var jitStr2 = (typeof jitterEstimate === 'number' && isFinite(jitterEstimate)) ? (jitterEstimate).toFixed(1) : (function(){
+                    var el = document.getElementById('jitter-value');
+                    var v = el && el.textContent ? parseFloat(el.textContent) : NaN;
+                    return (isFinite(v) ? v.toFixed(1) : (0).toFixed(1));
+                  })();
+                  return 'r=l' + '&d=' + (downloadSpeed||0) + '&u=' + (uploadSpeed||0) + '&p=' + (pingEstimate||0) + '&jit=' + encodeURIComponent(jitStr2) + '&do=' + encodeURIComponent(host2) + '&sip=' + encodeURIComponent(host2);
                 }
               };
 
               var sendNow = function() {
-                saveTestData = buildPayload(myhostName || '');
+                saveTestData = buildPayload();
                 ServerConnect(5);
               };
 
