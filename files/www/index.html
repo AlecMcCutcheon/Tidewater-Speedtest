@@ -1142,8 +1142,12 @@ function ostOnload() {
   <div class="speedtest-container">
     <!-- Header -->
     <div class="header">
+        <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING
         <img src="assets/images/logo-1.png" alt="Tidewater Telecom" class="logo">
         <h1 class="title">Tidewater Telecom Speed Test</h1>
+        -->
+        <!-- NEW CODE - TESTING: remove logo and update title -->
+        <h1 class="title">O.P.E.N. Speedtest</h1>
         <p class="subtitle">Test your connection to our O.P.E.N. fiber network</p>
     </div>
 
@@ -1336,10 +1340,11 @@ function ostOnload() {
     <input type="hidden" name="ua" id="ost_f_ua">
   </form>
   
-  <!-- Footer -->
+  <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING: footer removed per request
   <footer style="text-align: center; padding: 0.5rem; color: var(--text-secondary); font-size: 0.875rem;">
     © 2025 Tidewater Telecom
   </footer>
+  -->
   
   <!-- External Dependencies -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -1638,22 +1643,51 @@ function ostOnload() {
        const script = document.createElement('script');
        script.src = 'assets/js/app-2.5.4.js?v=' + Date.now();
        script.onload = function() {
-         // TWT ASCII Art Banner (Proper TWT)
+         // ASCII Art Banner
+         /* OLD CODE - KEEP UNTIL CONFIRMED WORKING
                   console.log('%c' + 
-           '╔════════════════════════════════════════╗\n' +
-           '║                                        ║\n' +
-           '║      ████████╗██╗    ██╗████████╗      ║\n' +
-           '║      ╚══██╔══╝██║    ██║╚══██╔══╝      ║\n' +
-           '║         ██║   ██║ █╗ ██║   ██║         ║\n' +
-           '║         ██║   ██║███╗██║   ██║         ║\n' +
-           '║         ██║   ╚███╔███╔╝   ██║         ║\n' +
-           '║         ╚═╝    ╚══╝╚══╝    ╚═╝         ║\n' +
-           '║                                        ║\n' +
-           '║     Tidewater Telecom - Speed Test     ║\n' +
-           '║                                        ║\n' +
-           '╚════════════════════════════════════════╝', 
+           ' ██████╗    ██████╗ ███████╗   ███╗   ██╗   \n' +
+           '██╔═══██╗   ██╔══██╗██╔════╝   ████╗  ██║   \n' +
+           '██║   ██║   ██████╔╝█████╗     ██╔██╗ ██║   \n' +
+           '██║   ██║   ██╔═══╝ ██╔══╝     ██║╚██╗██║   \n' +
+           '╚██████╔╝██╗██║██╗  ███████╗██╗██║ ╚████║██╗\n' +
+           ' ╚═════╝ ╚═╝╚═╝╚═╝  ╚══════╝╚═╝╚═╝  ╚═══╝╚═╝\n' +
+           '                                            ', 
            'font-family: monospace; font-size: 12px; font-weight: bold;'
          );
+         */
+                  (function() {
+                    const artLines = [
+                      ' ██████╗    ██████╗ ███████╗   ███╗   ██╗   ',
+                      '██╔═══██╗   ██╔══██╗██╔════╝   ████╗  ██║   ',
+                      '██║   ██║   ██████╔╝█████╗     ██╔██╗ ██║   ',
+                      '██║   ██║   ██╔═══╝ ██╔══╝     ██║╚██╗██║   ',
+                      '╚██████╔╝██╗██║██╗  ███████╗██╗██║ ╚████║██╗',
+                      ' ╚═════╝ ╚═╝╚═╝╚═╝  ╚══════╝╚═╝╚═╝  ╚═══╝╚═╝'
+                    ];
+                    const subtitle = 'O.P.E.N. Speedtest';
+                    const width = Math.max(...artLines.map(l => l.length), subtitle.length);
+                    const pad = (s) => s + ' '.repeat(width - s.length);
+                    const borderTop = '╔' + '═'.repeat(width + 2) + '╗';
+                    const borderBottom = '╚' + '═'.repeat(width + 2) + '╝';
+                    const emptyLine = '║' + ' '.repeat(width + 2) + '║';
+                    const centered = (s) => {
+                      const total = width - s.length;
+                      const left = Math.floor(total / 2);
+                      const right = total - left;
+                      return '║ ' + ' '.repeat(left) + s + ' '.repeat(right) + ' ║';
+                    };
+                    const content = [
+                      borderTop,
+                      emptyLine,
+                      ...artLines.map(l => '║ ' + pad(l) + ' ║'),
+                      emptyLine,
+                      centered(subtitle),
+                      emptyLine,
+                      borderBottom
+                    ].join('\n');
+                    console.log('%c' + content, 'font-family: monospace; font-size: 12px; font-weight: bold;');
+                  })();
          
          // Console warning
          console.log('%c⚠️  WARNING ⚠️', 'color: #ff6b35; font-size: 14px; font-weight: bold;');
