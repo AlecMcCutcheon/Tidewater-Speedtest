@@ -34,7 +34,10 @@
     
     body {
       margin: 0;
-      padding: var(--spacing);
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: page padding */
+      /* padding: var(--spacing); */
+      /* NEW CODE - TESTING: remove outer page padding */
+      padding: 0;
       min-height: 100vh;
       /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: use main background */
       /* background: var(--bg-main); */
@@ -48,26 +51,42 @@
     .speedtest-container {
       /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: max-width was 1200px */
       max-width: 1000px;
-      margin: 0 auto;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: centered with default margins */
+      /* margin: 0 auto; */
+      /* NEW CODE - TESTING: no extra vertical margins */
+      margin: 0 auto 0 auto;
       background: var(--bg-card);
       border-radius: 20px;
       /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: card shadow */
       /* box-shadow: var(--shadow); */
       /* NEW CODE - TESTING: remove shadow so container blends with body */
       box-shadow: none;
-      padding: var(--spacing);
-      min-height: calc(100vh - 2rem);
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: inner padding */
+      /* padding: var(--spacing); */
+      /* NEW CODE - TESTING: remove inner container padding */
+      padding: 0;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: min-height accounting for padding */
+      /* min-height: calc(100vh - 2rem); */
+      /* NEW CODE - TESTING: full viewport height */
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-bottom: 1rem;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: bottom margin */
+      /* margin-bottom: 1rem; */
+      /* NEW CODE - TESTING: no bottom margin */
+      margin-bottom: 0;
     }
     
     /* Header */
     .header {
       text-align: center;
-      margin-bottom: 2rem;
-      margin-top: 1rem;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: default header spacing */
+      /* margin-bottom: 2rem; */
+      /* margin-top: 1rem; */
+      /* NEW CODE - TESTING: reduce spacing above title, slightly tighter below */
+      margin-top: 0;
+      margin-bottom: 1rem;
     }
     
     .logo {
@@ -191,7 +210,10 @@
       border-radius: var(--border-radius);
       padding: 1.5rem;
       box-shadow: var(--shadow);
-      margin-bottom: 2rem;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: space below stats */
+      /* margin-bottom: 2rem; */
+      /* NEW CODE - TESTING: no space below stats so it rests at bottom */
+      margin-bottom: 0;
       max-width: 900px;
     }
     
