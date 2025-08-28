@@ -36,7 +36,10 @@
       margin: 0;
       padding: var(--spacing);
       min-height: 100vh;
-      background: var(--bg-main);
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: use main background */
+      /* background: var(--bg-main); */
+      /* NEW CODE - TESTING: match body background to container */
+      background: var(--bg-card);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       color: var(--text-primary);
     }
@@ -48,7 +51,10 @@
       margin: 0 auto;
       background: var(--bg-card);
       border-radius: 20px;
-      box-shadow: var(--shadow);
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: card shadow */
+      /* box-shadow: var(--shadow); */
+      /* NEW CODE - TESTING: remove shadow so container blends with body */
+      box-shadow: none;
       padding: var(--spacing);
       min-height: calc(100vh - 2rem);
       display: flex;
@@ -338,6 +344,92 @@
       min-width: min(700px, 90vw);
       min-height: 400px;
       position: relative;
+    }
+    
+    /* Settings Button */
+    .settings-button {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: solid circular button */
+      /* background: #fff; */
+      /* NEW CODE - TESTING: icon-only button */
+      background: transparent;
+      color: var(--primary-blue);
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: show border */
+      /* border: 2px solid var(--primary-blue); */
+      /* NEW CODE - TESTING: remove default button border */
+      border: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 30;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: drop shadow */
+      /* box-shadow: var(--shadow); */
+      /* NEW CODE - TESTING: no shadow to remove circular container look */
+      box-shadow: none;
+      transition: transform 0.2s ease;
+    }
+    .settings-button:hover { transform: scale(1.05); background: transparent; box-shadow: none; }
+    .settings-button:active { background: transparent; box-shadow: none; }
+    .settings-button:focus { outline: none; }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal {
+      background: var(--bg-card);
+      border-radius: var(--border-radius);
+      padding: 1rem 1.25rem;
+      width: min(600px, 95vw);
+      box-shadow: var(--shadow);
+      position: relative;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+    /* NEW CODE - TESTING: make inner thread-config container in modal invisible */
+    .modal .thread-config {
+      background: transparent !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      /* OLD CODE - KEEP UNTIL CONFIRMED WORKING: no padding/margin */
+      /* padding: 0 !important; */
+      /* margin: 0 !important; */
+      /* NEW CODE - TESTING: add vertical breathing room */
+      padding: 1rem 0 !important;
+      margin: 0.5rem 0 !important;
+      width: 100% !important;
+      max-width: none !important;
     }
     
     .speed-gauge {
@@ -1094,6 +1186,9 @@
       /* NEW: start with value marks hidden; JS reveals them */
       --value-mark-opacity: 0;
     }
+    /* NEW CODE - TESTING: hide live speed and status in progress container */
+    .progress-speed,
+    .progress-status { display: none !important; }
   </style>
 </head>
 
@@ -1149,6 +1244,81 @@ function ostOnload() {
         <!-- NEW CODE - TESTING: remove logo and update title -->
         <h1 class="title">O.P.E.N. Speedtest</h1>
         <p class="subtitle">Test your connection to our O.P.E.N. fiber network</p>
+    </div>
+
+    <!-- NEW CODE - TESTING: Gauge Container moved to be first after header -->
+    <div class="gauge-container">
+      <button class="settings-button" id="settingsButton" aria-label="Settings"><i class="fas fa-cog"></i></button>
+      <!-- Speed Gauge -->
+      <div class="speed-gauge" id="speedGaugeContainer">
+        <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING
+        <analog-gauge id="speedGauge" value="0" min="0" max="1000" values="0,0.25,0.5,0.75,1,5.5,10,55,100,250,500,750,1000+"></analog-gauge>
+        -->
+        <!-- NEW CODE - TESTING: replace 250 with 300 in gauge marks -->
+        <analog-gauge id="speedGauge" value="0" min="0" max="1000" values="0,0.25,0.5,0.75,1,5.5,10,55,100,300,500,750,1000+"></analog-gauge>
+        
+        <!-- GO Button positioned relative to the gauge center -->
+        <div class="go-button-container" id="goButtonContainer">
+          <button class="go-button" id="goButton">
+            <span class="go-text">GO</span>
+          </button>
+        </div>
+      </div>
+                
+      <!-- Progress Container -->
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-icon">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="modern-progress-fill"></div>
+          </div>
+          <div class="progress-icon">
+            <i class="fas fa-server"></i>
+          </div>
+        </div>
+        <div class="progress-speed" id="modern-progress-speed">--</div>
+        <div class="progress-status" id="modern-progress-status">Ready</div>
+      </div>
+    </div>
+
+    <!-- NEW CODE - TESTING: Settings Modal with moved Test Configuration -->
+    <div id="settings-modal" class="modal-overlay" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+        <div class="modal-header">
+          <div class="modal-title" id="settings-modal-title">Test Configuration</div>
+          <button class="modal-close" id="settingsCloseButton" aria-label="Close"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="thread-config">
+            <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING: inner title duplicated with modal header -->
+            <!-- <div class="thread-config-title">Test Configuration</div> -->
+            <div class="thread-config-row">
+              <div class="thread-config-item">
+                <div class="thread-label" id="single-label">Single</div>
+                <button class="thread-btn" id="thread-mode-btn" 
+                        data-tooltip-single="Single: Uses 1 thread for download and upload"
+                        data-tooltip-multi="Multi: Uses multiple threads for download and upload"
+                        data-tooltip-current="Single: Uses 1 thread for download and upload">
+                  <i class="fas fa-circle"></i>
+                </button>
+                <div class="thread-label" id="multi-label">Multi</div>
+              </div>
+              <div class="thread-config-item">
+                <div class="thread-label" id="default-label">Default</div>
+                <div class="tooltip-wrapper"
+                     data-tooltip-default="Default: Uses 6 threads for download and upload"
+                     data-tooltip-dynamic="Dynamic: Uses 50% of logical processors for threads"
+                     data-tooltip-current="Default: Uses 6 threads for download and upload">
+                  <button class="thread-switch" id="thread-type-btn"></button>
+                </div>
+                <div class="thread-label" id="dynamic-label">Dynamic</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Error Container -->
@@ -1243,59 +1413,44 @@ function ostOnload() {
           </div>
         </div>
         
-    <!-- Gauge Container -->
+    <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING: Gauge Container original position commented out -->
+    <!--
             <div class="gauge-container">
-      <!-- Speed Gauge -->
       <div class="speed-gauge" id="speedGaugeContainer">
-        <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING
-        <analog-gauge id="speedGauge" value="0" min="0" max="1000" values="0,0.25,0.5,0.75,1,5.5,10,55,100,250,500,750,1000+"></analog-gauge>
-        -->
-        <!-- NEW CODE - TESTING: replace 250 with 300 in gauge marks -->
         <analog-gauge id="speedGauge" value="0" min="0" max="1000" values="0,0.25,0.5,0.75,1,5.5,10,55,100,300,500,750,1000+"></analog-gauge>
-        
-        <!-- GO Button positioned relative to the gauge center -->
         <div class="go-button-container" id="goButtonContainer">
           <button class="go-button" id="goButton">
             <span class="go-text">GO</span>
           </button>
         </div>
       </div>
-                
-      <!-- Progress Container -->
       <div class="progress-container">
         <div class="progress-bar">
-          <div class="progress-icon">
-                      <i class="fas fa-user"></i>
-                    </div>
-                    <div class="progress-track">
-                      <div class="progress-fill" id="modern-progress-fill"></div>
-                    </div>
-          <div class="progress-icon">
-                      <i class="fas fa-server"></i>
-                    </div>
-                  </div>
-                  <div class="progress-speed" id="modern-progress-speed">--</div>
-                  <div class="progress-status" id="modern-progress-status">Ready</div>
+          <div class="progress-icon"><i class="fas fa-user"></i></div>
+          <div class="progress-track"><div class="progress-fill" id="modern-progress-fill"></div></div>
+          <div class="progress-icon"><i class="fas fa-server"></i></div>
+        </div>
+        <div class="progress-speed" id="modern-progress-speed">--</div>
+        <div class="progress-status" id="modern-progress-status">Ready</div>
+      </div>
             </div>
-          </div>
+    -->
           
-    <!-- Thread Configuration -->
+    <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING: Thread Configuration moved into Settings Modal -->
+    <!--
     <div class="thread-config">
-              <div class="thread-config-title">Test Configuration</div>
-              <!-- OLD CODE - KEEP UNTIL CONFIRMED WORKING
-              <div class="thread-config-title">Thread Configuration</div>
-              -->
-              <div class="thread-config-row">
-                <div class="thread-config-item">
+      <div class="thread-config-title">Test Configuration</div>
+      <div class="thread-config-row">
+        <div class="thread-config-item">
           <div class="thread-label" id="single-label">Single</div>
           <button class="thread-btn" id="thread-mode-btn" 
                   data-tooltip-single="Single: Uses 1 thread for download and upload"
                   data-tooltip-multi="Multi: Uses multiple threads for download and upload"
                   data-tooltip-current="Single: Uses 1 thread for download and upload">
-                    <i class="fas fa-circle"></i>
-                  </button>
+            <i class="fas fa-circle"></i>
+          </button>
           <div class="thread-label" id="multi-label">Multi</div>
-                </div>
+        </div>
         <div class="thread-config-item">
           <div class="thread-label" id="default-label">Default</div>
           <div class="tooltip-wrapper"
@@ -1305,9 +1460,10 @@ function ostOnload() {
             <button class="thread-switch" id="thread-type-btn"></button>
           </div>
           <div class="thread-label" id="dynamic-label">Dynamic</div>
-              </div>
-            </div>
-          </div>
+        </div>
+      </div>
+    </div>
+    -->
           
     <!-- Loading Spinner -->
     <div id="loading_app" class="spinner hidden">
@@ -1638,6 +1794,8 @@ function ostOnload() {
        initializeGoButton();
        initializeThreadControls();
        initializeGaugeNumbers();
+       initializeSettingsModal();
+       initializeMetricValueMirroring();
        
        // Load main app script with cache busting
        const script = document.createElement('script');
@@ -1932,6 +2090,198 @@ function ostOnload() {
       window.testGauge100 = () => testGaugeScaling(100);
       window.testGauge500 = () => testGaugeScaling(500);
       window.testGauge1000 = () => testGaugeScaling(1000);
+
+    function initializeSettingsModal() {
+      var overlay = document.getElementById('settings-modal');
+      var openBtn = document.getElementById('settingsButton');
+      var closeBtn = document.getElementById('settingsCloseButton');
+
+      if (!overlay || !openBtn || !closeBtn) return;
+
+      function openModal() {
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeModal() {
+        overlay.classList.remove('show');
+        overlay.setAttribute('aria-hidden', 'true');
+      }
+
+      openBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+          closeModal();
+        }
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+      });
+    }
+
+    // NEW CODE - TESTING: mirror live progress speed into metric values during phases
+    function initializeMetricValueMirroring() {
+      var speedEl = document.getElementById('modern-progress-speed');
+      var statusEl = document.getElementById('modern-progress-status');
+      var dlEl = document.getElementById('download-value');
+      var ulEl = document.getElementById('upload-value');
+      var dlStatusEl = document.getElementById('download-status');
+      var ulStatusEl = document.getElementById('upload-status');
+      if (!speedEl || !statusEl || !dlEl || !ulEl) return;
+
+      var liveState = {
+        running: false,
+        phase: null,
+        lastPhase: null,
+        finalDownload: null,
+        finalUpload: null,
+        peakDownload: null,
+        peakUpload: null,
+        selfWrite: { download: false, upload: false }
+      };
+
+      // Hidden final result targets (can be updated by backend or by us)
+      var dlFinalEl = document.getElementById('download-results');
+      var ulFinalEl = document.getElementById('upload-results');
+
+      function parseNumber(text) {
+        var m = (text || '').match(/\d+(?:\.\d+)?/);
+        return m ? parseFloat(m[0]) : NaN;
+      }
+
+      function detectPhase() {
+        var t = (statusEl.textContent || '').toLowerCase();
+        if (t.includes('download')) return 'download';
+        if (t.includes('upload')) return 'upload';
+        return null;
+      }
+
+      function writeLive(which, value) {
+        if (which === 'download') {
+          liveState.selfWrite.download = true;
+          dlEl.textContent = String(value);
+          liveState.selfWrite.download = false;
+        } else if (which === 'upload') {
+          liveState.selfWrite.upload = true;
+          ulEl.textContent = String(value);
+          liveState.selfWrite.upload = false;
+        }
+      }
+
+      function setHiddenFinal(which, value) {
+        if (!isFinite(value)) return;
+        if (which === 'download' && dlFinalEl) dlFinalEl.textContent = String(value);
+        if (which === 'upload' && ulFinalEl) ulFinalEl.textContent = String(value);
+      }
+
+      function handleFinal(which, value) {
+        if (!isFinite(value)) return;
+        if (which === 'download') {
+          liveState.finalDownload = value;
+          writeLive('download', value);
+        } else if (which === 'upload') {
+          liveState.finalUpload = value;
+          writeLive('upload', value);
+        }
+        if (liveState.finalDownload != null && liveState.finalUpload != null) {
+          liveState.running = false;
+          liveState.phase = null;
+          liveState.lastPhase = null;
+          liveState.peakDownload = null;
+          liveState.peakUpload = null;
+          // clear finals per request (safety)
+          liveState.finalDownload = null;
+          liveState.finalUpload = null;
+        }
+      }
+
+      function maybeMirror() {
+        if (!liveState.running) return;
+        var currentPhase = detectPhase();
+        // Phase change handling
+        if (liveState.lastPhase && liveState.lastPhase !== currentPhase) {
+          if (liveState.lastPhase === 'download' && liveState.finalDownload == null) {
+            var finalDl = parseNumber((dlFinalEl && dlFinalEl.textContent) || '');
+            if (!isFinite(finalDl)) finalDl = liveState.peakDownload;
+            if (isFinite(finalDl)) {
+              setHiddenFinal('download', finalDl);
+              handleFinal('download', finalDl);
+            }
+          }
+          if (liveState.lastPhase === 'upload' && liveState.finalUpload == null) {
+            var finalUl = parseNumber((ulFinalEl && ulFinalEl.textContent) || '');
+            if (!isFinite(finalUl)) finalUl = liveState.peakUpload;
+            if (isFinite(finalUl)) {
+              setHiddenFinal('upload', finalUl);
+              handleFinal('upload', finalUl);
+            }
+          }
+        }
+        liveState.phase = currentPhase;
+        liveState.lastPhase = currentPhase;
+        if (!currentPhase) return;
+        if (currentPhase === 'download' && liveState.finalDownload != null) return;
+        if (currentPhase === 'upload' && liveState.finalUpload != null) return;
+
+        var n = parseNumber(speedEl.textContent || '');
+        if (!isFinite(n)) return;
+        // Track peaks per phase
+        if (currentPhase === 'download') {
+          if (liveState.peakDownload == null || n > liveState.peakDownload) liveState.peakDownload = n;
+        } else if (currentPhase === 'upload') {
+          if (liveState.peakUpload == null || n > liveState.peakUpload) liveState.peakUpload = n;
+        }
+        writeLive(currentPhase, n);
+      }
+
+      // Observe progress live updates and status for phase changes
+      var speedObserver = new MutationObserver(maybeMirror);
+      var statusObserver = new MutationObserver(maybeMirror);
+      speedObserver.observe(speedEl, { childList: true, characterData: true, subtree: true });
+      statusObserver.observe(statusEl, { childList: true, characterData: true, subtree: true });
+
+      // Observe hidden final result slots (backend may write to these)
+      if (dlFinalEl) new MutationObserver(function(){
+        var v = parseNumber(dlFinalEl.textContent || '');
+        if (isFinite(v)) handleFinal('download', v);
+      }).observe(dlFinalEl, { childList: true, characterData: true, subtree: true });
+      if (ulFinalEl) new MutationObserver(function(){
+        var v = parseNumber(ulFinalEl.textContent || '');
+        if (isFinite(v)) handleFinal('upload', v);
+      }).observe(ulFinalEl, { childList: true, characterData: true, subtree: true });
+
+      // Fallback: freeze on explicit Done status by writing peaks into hidden finals
+      function onMetricStatusChange() {
+        var dlDone = ((dlStatusEl && dlStatusEl.textContent) || '').toLowerCase().includes('done');
+        var ulDone = ((ulStatusEl && ulStatusEl.textContent) || '').toLowerCase().includes('done');
+        if (dlDone && liveState.finalDownload == null) {
+          var vdl = parseNumber((dlFinalEl && dlFinalEl.textContent) || '');
+          if (!isFinite(vdl)) vdl = isFinite(parseNumber(dlEl.textContent || '')) ? parseNumber(dlEl.textContent || '') : liveState.peakDownload;
+          if (isFinite(vdl)) { setHiddenFinal('download', vdl); handleFinal('download', vdl); }
+        }
+        if (ulDone && liveState.finalUpload == null) {
+          var vul = parseNumber((ulFinalEl && ulFinalEl.textContent) || '');
+          if (!isFinite(vul)) vul = isFinite(parseNumber(ulEl.textContent || '')) ? parseNumber(ulEl.textContent || '') : liveState.peakUpload;
+          if (isFinite(vul)) { setHiddenFinal('upload', vul); handleFinal('upload', vul); }
+        }
+      }
+      if (dlStatusEl) new MutationObserver(onMetricStatusChange).observe(dlStatusEl, { childList: true, characterData: true, subtree: true });
+      if (ulStatusEl) new MutationObserver(onMetricStatusChange).observe(ulStatusEl, { childList: true, characterData: true, subtree: true });
+
+      var goButton = document.getElementById('goButton');
+      if (goButton) {
+        goButton.addEventListener('click', function() {
+          liveState.running = true;
+          liveState.phase = null;
+          liveState.lastPhase = null;
+          liveState.finalDownload = null;
+          liveState.finalUpload = null;
+          liveState.peakDownload = null;
+          liveState.peakUpload = null;
+        });
+      }
+    }
     </script>
   </body>
 </html>
