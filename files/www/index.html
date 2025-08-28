@@ -10,6 +10,35 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   
+  <!-- NEW CODE - TESTING: Early theme application to prevent color flash -->
+  <script>
+    (function(){
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var root = document.documentElement;
+        var primaryColor = params.get('primaryColor');
+        function hexToRgb(hex){
+          if (!hex) return null; var h = hex.trim(); if (h[0] === '#') h = h.slice(1);
+          if (h.length === 3){ return { r: parseInt(h[0]+h[0],16), g: parseInt(h[1]+h[1],16), b: parseInt(h[2]+h[2],16) }; }
+          if (h.length === 6){ var r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16); if([r,g,b].some(function(v){return isNaN(v);})){return null;} return { r:r, g:g, b:b }; }
+          return null;
+        }
+        if (primaryColor){
+          var raw = primaryColor.trim();
+          if (raw && raw[0] !== '#' && /^[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/.test(raw)) { primaryColor = '#'+raw; }
+          root.style.setProperty('--primary-blue', primaryColor);
+          var rgb = hexToRgb(primaryColor);
+          if (rgb){
+            var computed = getComputedStyle(root).getPropertyValue('--dark-blue-transparent').trim();
+            var alpha = 0.1; var m = computed.match(/rgba?\([^,]+,[^,]+,[^,]+,\s*([0-9]*\.?[0-9]+)\)/);
+            if (m && m[1]) { var a = parseFloat(m[1]); if (isFinite(a)) alpha = a; }
+            root.style.setProperty('--dark-blue-transparent', 'rgba('+rgb.r+','+rgb.g+','+rgb.b+','+alpha+')');
+          }
+        }
+      } catch(e) { /* silent */ }
+    })();
+  </script>
+  
   <style>
     :root {
       --primary-blue: #1e3a8a;
@@ -1767,7 +1796,110 @@ function ostOnload() {
   <!-- Main Application Script -->
   <script>
     // Enhanced mobile-optimized JavaScript
+    
+    // NEW CODE - TESTING: allow theme overrides via URL query params
+    // Preferred: ?primaryColor=%230ea5e9  (auto-derives transparent variant)
+    // Back-compat (still supported): ?primaryBlue=%230ea5e9&darkBlueTransparent=rgba(...)
+    function applyThemeFromQuery() {
+      try {
+        var params = new URLSearchParams(window.location.search || '');
+        var root = document.documentElement;
+        var pb = params.get('primaryBlue');
+        var dt = params.get('darkBlueTransparent');
+        var primaryColor = params.get('primaryColor');
+
+        // Helper: parse #RRGGBB or #RGB to {r,g,b}
+        function hexToRgb(hex) {
+          if (!hex) return null;
+          var h = hex.trim();
+          if (h[0] === '#') h = h.slice(1);
+          if (h.length === 3) {
+            var r = parseInt(h[0] + h[0], 16);
+            var g = parseInt(h[1] + h[1], 16);
+            var b = parseInt(h[2] + h[2], 16);
+            return { r: r, g: g, b: b };
+          }
+          if (h.length === 6) {
+            var r6 = parseInt(h.slice(0,2), 16);
+            var g6 = parseInt(h.slice(2,4), 16);
+            var b6 = parseInt(h.slice(4,6), 16);
+            if ([r6,g6,b6].some(function(v){ return isNaN(v); })) return null;
+            return { r: r6, g: g6, b: b6 };
+          }
+          return null;
+        }
+
+        // If primaryColor provided, prefer it
+        if (primaryColor) {
+          // Allow passing bare hex without '#', e.g., primaryColor=7c161b
+          var raw = primaryColor.trim();
+          if (raw && raw[0] !== '#' && /^[0-9a-fA-F]{3}(?:[0-9a-fA-F]{3})?$/.test(raw)) {
+            primaryColor = '#' + raw;
+          }
+          root.style.setProperty('--primary-blue', primaryColor);
+          var rgb = hexToRgb(primaryColor);
+          if (rgb) {
+            // Use same alpha as existing transparent blue (default 0.1)
+            var computed = getComputedStyle(root).getPropertyValue('--dark-blue-transparent').trim();
+            var alpha = 0.1;
+            var m = computed.match(/rgba?\([^,]+,[^,]+,[^,]+,\s*([0-9]*\.?[0-9]+)\)/);
+            if (m && m[1]) {
+              var parsedA = parseFloat(m[1]);
+              if (isFinite(parsedA)) alpha = parsedA;
+            }
+            var rgba = 'rgba(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ',' + alpha + ')';
+            root.style.setProperty('--dark-blue-transparent', rgba);
+          }
+        } else {
+          // Back-compat path
+          if (pb) root.style.setProperty('--primary-blue', pb);
+          if (dt) root.style.setProperty('--dark-blue-transparent', dt);
+        }
+      } catch (e) {
+        // keep silent
+      }
+    }
+
+    // NEW CODE - TESTING: set Chart.js line/point colors from CSS var
+    function applyChartThemeDefaults() {
+      try {
+        if (!window.Chart) return;
+        var primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-blue').trim() || '#1e3a8a';
+        Chart.defaults.elements = Chart.defaults.elements || {};
+        Chart.defaults.elements.line = Chart.defaults.elements.line || {};
+        Chart.defaults.elements.line.borderColor = primary;
+        Chart.defaults.elements.point = Chart.defaults.elements.point || {};
+        Chart.defaults.elements.point.borderColor = primary;
+        Chart.defaults.elements.point.backgroundColor = primary;
+      } catch (e) { /* silent */ }
+    }
+
+    function refreshExistingChartLineColors() {
+      try {
+        if (!window.Chart) return;
+        var primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-blue').trim() || '#1e3a8a';
+        var instances = [];
+        if (Chart.instances) {
+          instances = Array.isArray(Chart.instances) ? Chart.instances : Object.values(Chart.instances);
+        }
+        instances.forEach(function(chart) {
+          var c = chart && chart.chart ? chart.chart : chart;
+          if (!c || !c.data || !Array.isArray(c.data.datasets)) return;
+          c.data.datasets.forEach(function(ds) {
+            ds.borderColor = primary;
+            if (ds.type === 'line' || ds.type == null) {
+              if (ds.pointBackgroundColor == null) ds.pointBackgroundColor = primary;
+              if (ds.pointBorderColor == null) ds.pointBorderColor = primary;
+            }
+          });
+          if (typeof c.update === 'function') c.update('none');
+        });
+      } catch (e) { /* silent */ }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
+      applyThemeFromQuery();
+      applyChartThemeDefaults();
       initializeSpeedTest();
     });
 
@@ -1878,6 +2010,8 @@ function ostOnload() {
          if (typeof ostOnload === 'function') {
            ostOnload();
          }
++        // Update any charts created during ostOnload to use themed line color
++        setTimeout(refreshExistingChartLineColors, 0);
        };
        document.head.appendChild(script);
      }
